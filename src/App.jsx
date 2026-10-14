@@ -6,56 +6,104 @@ import {
 } from './services/ollamaService';
 
 function App() {
+  // Estado para la selección de plan ('estandar' | 'avanzado')
+  const [tipoPlan, setTipoPlan] = useState('estandar');
+
+  // Estados del formulario para Datos Financieros
+  const [datosFinancieros, setDatosFinancieros] = useState({
+    ingresosMensuales: 18000,
+    gastosFijos: 8500,
+    gastosVariables: 3500,
+    ahorroActual: 6000
+  });
+
+  // Estados del formulario para la Meta / Problemática
+  const [meta, setMeta] = useState({
+    nombre: "Comprar Laptop de Trabajo",
+    costo: 22000,
+    plazoDias: 90,
+    descripcionProblematica: "Necesito renovar mi equipo principal porque falla frecuentemente, pero no quiero desarmar todo mi fondo de emergencia actual."
+  });
+
+  // Estados del formulario para Deudas (exclusivo Plan Avanzado)
+  const [deudas, setDeudas] = useState([
+    { concepto: "Tarjeta de Crédito Santander", monto: 5000, interesAnual: "28%" }
+  ]);
+
+  // Estados de carga y resultados
   const [loading, setLoading] = useState(false);
-  const [tipoPrueba, setTipoPrueba] = useState('');
+  const [etapaActual, setEtapaActual] = useState('');
   const [resultado, setResultado] = useState(null);
 
-  // Datos de prueba simulados
-  const datosFinancieros = {
-    ingresosMensuales: 15000,
-    gastosFijos: 8000,
-    gastosVariables: 3000,
-    ahorroActual: 5000
+  // Manejadores de cambios en los inputs
+  const handleDatosFinancierosChange = (e) => {
+    const { name, value } = e.target;
+    setDatosFinancieros(prev => ({ ...prev, [name]: Number(value) }));
   };
 
-  const metaEjemplo = {
-    nombre: "Fondo de Emergencia / Equipamiento",
-    costo: 12000,
-    plazoDias: 60
+  const handleMetaChange = (e) => {
+    const { name, value } = e.target;
+    setMeta(prev => ({ 
+      ...prev, 
+      [name]: name === 'costo' || name === 'plazoDias' ? Number(value) : value 
+    }));
   };
 
-  const deudasEjemplo = [
-    { concepto: "Tarjeta de Crédito", monto: 4000, interesAnual: "24%" }
-  ];
+  const handleDeudaChange = (index, e) => {
+    const { name, value } = e.target;
+    const nuevasDeudas = [...deudas];
+    nuevasDeudas[index][name] = name === 'monto' ? Number(value) : value;
+    setDeudas(nuevasDeudas);
+  };
 
-  // Handler 1: Clasificación Flash (llama3.2:3b)
-  const handleProbarFlash = async () => {
+  const agregarDeuda = () => {
+    setDeudas([...deudas, { concepto: '', monto: 0, interesAnual: '' }]);
+  };
+
+  const eliminarDeuda = (index) => {
+    setDeudas(deudas.filter((_, i) => i !== index));
+  };
+
+  // Proceso principal al enviar el formulario
+  const handleGenerarAsesoria = async (e) => {
+    e.preventDefault();
     setLoading(true);
-    setTipoPrueba('Clasificación Flash (llama3.2:3b)');
     setResultado(null);
-    const res = await clasificarViabilidadMeta(datosFinancieros, metaEjemplo);
-    setResultado(res);
-    setLoading(false);
-  };
 
-  // Handler 2: Plan Estándar (llama3.1:8b)
-  const handleProbarEstandar = async () => {
-    setLoading(true);
-    setTipoPrueba('Plan Estándar (llama3.1:8b)');
-    setResultado(null);
-    const res = await generarPlanEstandar(datosFinancieros, metaEjemplo);
-    setResultado(res);
-    setLoading(false);
-  };
+    // 1. Paso A: Clasificación Flash con llama3.2:3b
+    setEtapaActual('1/2 Clasificando viabilidad de la meta (llama3.2:3b)...');
+    const clasificacion = await clasificarViabilidadMeta(datosFinancieros, meta);
 
-  // Handler 3: Plan Avanzado CoT (llama3.1:8b)
-  const handleProbarAvanzado = async () => {
-    setLoading(true);
-    setTipoPrueba('Plan Avanzado CoT (llama3.1:8b)');
-    setResultado(null);
-    const res = await generarPlanAvanzadoCoT(datosFinancieros, deudasEjemplo, metaEjemplo);
-    setResultado(res);
+    if (clasificacion.error) {
+      setResultado(clasificacion);
+      setLoading(false);
+      setEtapaActual('');
+      return;
+    }
+
+    // 2. Paso B: Asesoría con llama3.1:8b según el plan seleccionado
+    if (tipoPlan === 'estandar') {
+      setEtapaActual('2/2 Diseñando Plan Estándar y estructura de gráficas (llama3.1:8b)...');
+      const planEstandar = await generarPlanEstandar(datosFinancieros, meta, clasificacion);
+      
+      setResultado({
+        plan: "Estándar",
+        clasificacionFlash: clasificacion,
+        asesoria: planEstandar
+      });
+    } else {
+      setEtapaActual('2/2 Ejecutando análisis financiero profundo CoT (llama3.1:8b)...');
+      const planAvanzado = await generarPlanAvanzadoCoT(datosFinancieros, deudas, meta, clasificacion);
+
+      setResultado({
+        plan: "Avanzado (Chain of Thought)",
+        clasificacionFlash: clasificacion,
+        asesoria: planAvanzado
+      });
+    }
+
     setLoading(false);
+    setEtapaActual('');
   };
 
   return (
@@ -66,120 +114,365 @@ function App() {
       minHeight: "100vh",
       padding: "40px 20px"
     }}>
-      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "850px", margin: "0 auto" }}>
         
-        {/* Encabezado */}
-        <header style={{ borderBottom: "2px solid #34b8a9", paddingBottom: "15px", marginBottom: "30px" }}>
-          <h1 style={{ color: "#106057", fontSize: "2.2rem", margin: 0 }}>📊 Plaris</h1>
+        {/* Encabezado Principal */}
+        <header style={{ borderBottom: "3px solid #34b8a9", paddingBottom: "15px", marginBottom: "30px" }}>
+          <h1 style={{ color: "#106057", fontSize: "2.4rem", margin: 0, fontWeight: "bold" }}>📊 Plaris</h1>
           <p style={{ color: "#34b8a9", marginTop: "5px", fontSize: "1.1rem" }}>
-            Prueba de Integración - Modelos Meta Llama
+            Plataforma de Asesoría Financiera Inteligente con Meta Llama
           </p>
         </header>
 
-        {/* Panel de Control de Pruebas */}
-        <div style={{
+        {/* PASO 1: Selección del Tipo de Plan */}
+        <section style={{
           backgroundColor: "#ffffff",
           padding: "25px",
           borderRadius: "12px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-          marginBottom: "30px"
+          marginBottom: "25px"
         }}>
           <h2 style={{ fontSize: "1.2rem", color: "#106057", marginTop: 0 }}>
-            Ejecutar pruebas de IA Local
+            1. Elige el tipo de Asesoría
           </h2>
-          <p style={{ fontSize: "0.95rem", color: "#555", marginBottom: "20px" }}>
-            Selecciona el modelo y la tarea que deseas probar con el backend de Ollama:
-          </p>
-
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          
+          <div style={{ display: "flex", gap: "15px", marginTop: "15px" }}>
             <button
-              onClick={handleProbarFlash}
-              disabled={loading}
+              type="button"
+              onClick={() => setTipoPlan('estandar')}
               style={{
-                backgroundColor: "#34b8a9",
-                color: "#ffffff",
-                border: "none",
-                padding: "12px 18px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              1. Clasificación Flash (3B)
-            </button>
-
-            <button
-              onClick={handleProbarEstandar}
-              disabled={loading}
-              style={{
-                backgroundColor: "#106057",
-                color: "#ffffff",
-                border: "none",
-                padding: "12px 18px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              2. Plan Estándar (8B)
-            </button>
-
-            <button
-              onClick={handleProbarAvanzado}
-              disabled={loading}
-              style={{
-                backgroundColor: "#ffd53f",
+                flex: 1,
+                padding: "16px",
+                borderRadius: "10px",
+                border: tipoPlan === 'estandar' ? "3px solid #34b8a9" : "2px solid #e0e0e0",
+                backgroundColor: tipoPlan === 'estandar' ? "#e6f4f2" : "#ffffff",
                 color: "#106057",
-                border: "none",
-                padding: "12px 18px",
-                borderRadius: "8px",
-                fontWeight: "600",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1
+                cursor: "pointer",
+                fontWeight: "bold",
+                textAlign: "left",
+                transition: "all 0.2s"
               }}
             >
-              3. Plan Avanzado CoT (8B)
+              <div style={{ fontSize: "1.1rem" }}>📊 Plan Estándar</div>
+              <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "5px", fontWeight: "normal" }}>
+                Clasificación rápida de viabilidad + plan de ahorro por semanas estructurado para gráficas.
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTipoPlan('avanzado')}
+              style={{
+                flex: 1,
+                padding: "16px",
+                borderRadius: "10px",
+                border: tipoPlan === 'avanzado' ? "3px solid #ffd53f" : "2px solid #e0e0e0",
+                backgroundColor: tipoPlan === 'avanzado' ? "#fffdf0" : "#ffffff",
+                color: "#106057",
+                cursor: "pointer",
+                fontWeight: "bold",
+                textAlign: "left",
+                transition: "all 0.2s"
+              }}
+            >
+              <div style={{ fontSize: "1.1rem" }}>🧠 Plan Avanzado (CoT)</div>
+              <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "5px", fontWeight: "normal" }}>
+                Análisis financiero profundo paso a paso, estrategia de liquidación de deudas y mitigación de riesgos.
+              </div>
             </button>
           </div>
-        </div>
+        </section>
 
-        {/* Estado de Carga */}
+        {/* PASO 2: Formulario de Datos */}
+        <form onSubmit={handleGenerarAsesoria}>
+          <section style={{
+            backgroundColor: "#ffffff",
+            padding: "25px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            marginBottom: "25px"
+          }}>
+            <h2 style={{ fontSize: "1.2rem", color: "#106057", marginTop: 0 }}>
+              2. Ingresa tus Datos Financieros
+            </h2>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginTop: "15px" }}>
+              <div>
+                <label style={labelStyle}>Ingresos Mensuales ($):</label>
+                <input
+                  type="number"
+                  name="ingresosMensuales"
+                  value={datosFinancieros.ingresosMensuales}
+                  onChange={handleDatosFinancierosChange}
+                  style={inputStyle}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Gastos Fijos Mensuales ($):</label>
+                <input
+                  type="number"
+                  name="gastosFijos"
+                  value={datosFinancieros.gastosFijos}
+                  onChange={handleDatosFinancierosChange}
+                  style={inputStyle}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Gastos Variables Estimados ($):</label>
+                <input
+                  type="number"
+                  name="gastosVariables"
+                  value={datosFinancieros.gastosVariables}
+                  onChange={handleDatosFinancierosChange}
+                  style={inputStyle}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Ahorro Actual Disponible ($):</label>
+                <input
+                  type="number"
+                  name="ahorroActual"
+                  value={datosFinancieros.ahorroActual}
+                  onChange={handleDatosFinancierosChange}
+                  style={inputStyle}
+                  required
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Sección de Meta / Problemática */}
+          <section style={{
+            backgroundColor: "#ffffff",
+            padding: "25px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            marginBottom: "25px"
+          }}>
+            <h2 style={{ fontSize: "1.2rem", color: "#106057", marginTop: 0 }}>
+              3. Define tu Meta o Problemática
+            </h2>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "15px" }}>
+              <div>
+                <label style={labelStyle}>Nombre de la Meta / Objetivo:</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={meta.nombre}
+                  onChange={handleMetaChange}
+                  style={inputStyle}
+                  placeholder="Ej. Fondo de Emergencia, Comprar Auto, Liquidar Tarjeta"
+                  required
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+                <div>
+                  <label style={labelStyle}>Monto / Costo Requerido ($):</label>
+                  <input
+                    type="number"
+                    name="costo"
+                    value={meta.costo}
+                    onChange={handleMetaChange}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Plazo Deseado (en Días):</label>
+                  <input
+                    type="number"
+                    name="plazoDias"
+                    value={meta.plazoDias}
+                    onChange={handleMetaChange}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Explica tu situación o problemática actual:</label>
+                <textarea
+                  name="descripcionProblematica"
+                  value={meta.descripcionProblematica}
+                  onChange={handleMetaChange}
+                  style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
+                  placeholder="Describe los detalles de tu meta o las dificultades financieras que enfrentas..."
+                  required
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Sección de Deudas (Solo en Plan Avanzado) */}
+          {tipoPlan === 'avanzado' && (
+            <section style={{
+              backgroundColor: "#ffffff",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              marginBottom: "25px",
+              borderLeft: "5px solid #ffd53f"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 style={{ fontSize: "1.2rem", color: "#106057", margin: 0 }}>
+                  4. Registro de Deudas Activas (Para Análisis CoT)
+                </h2>
+                <button
+                  type="button"
+                  onClick={agregarDeuda}
+                  style={{
+                    backgroundColor: "#34b8a9",
+                    color: "#fff",
+                    border: "none",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "bold"
+                  }}
+                >
+                  + Agregar Deuda
+                </button>
+              </div>
+
+              {deudas.map((deuda, index) => (
+                <div key={index} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "10px", marginTop: "15px", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    name="concepto"
+                    placeholder="Ej. Tarjeta de Crédito"
+                    value={deuda.concepto}
+                    onChange={(e) => handleDeudaChange(index, e)}
+                    style={inputStyle}
+                    required
+                  />
+                  <input
+                    type="number"
+                    name="monto"
+                    placeholder="Monto ($)"
+                    value={deuda.monto}
+                    onChange={(e) => handleDeudaChange(index, e)}
+                    style={inputStyle}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="interesAnual"
+                    placeholder="Interés (ej. 24%)"
+                    value={deuda.interesAnual}
+                    onChange={(e) => handleDeudaChange(index, e)}
+                    style={inputStyle}
+                    required
+                  />
+                  {deudas.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => eliminarDeuda(index)}
+                      style={{
+                        backgroundColor: "#e74c3c",
+                        color: "#fff",
+                        border: "none",
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      X
+                    </button>
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Botón de Envío */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              backgroundColor: tipoPlan === 'estandar' ? "#34b8a9" : "#106057",
+              color: "#ffffff",
+              border: "none",
+              padding: "16px",
+              borderRadius: "10px",
+              fontSize: "1.1rem",
+              fontWeight: "bold",
+              cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+              opacity: loading ? 0.7 : 1,
+              transition: "all 0.2s",
+              marginBottom: "30px"
+            }}
+          >
+            {loading ? "Procesando Asesoría con IA..." : `🚀 Generar Asesoría (${tipoPlan === 'estandar' ? 'Plan Estándar' : 'Plan Avanzado'})`}
+          </button>
+        </form>
+
+        {/* Banner de Estado de Carga */}
         {loading && (
           <div style={{
             backgroundColor: "#e6f4f2",
-            borderLeft: "4px solid #34b8a9",
-            padding: "15px 20px",
-            borderRadius: "6px",
-            marginBottom: "20px"
+            borderLeft: "5px solid #34b8a9",
+            padding: "20px",
+            borderRadius: "8px",
+            marginBottom: "30px"
           }}>
-            <strong style={{ color: "#106057" }}>Procesando consulta...</strong>
-            <p style={{ margin: "5px 0 0 0", fontSize: "0.9rem", color: "#555" }}>
-              Esperando respuesta del modelo en Ollama local.
+            <strong style={{ color: "#106057", fontSize: "1.05rem" }}>🤖 Ollama está analizando tus datos...</strong>
+            <p style={{ margin: "8px 0 0 0", fontSize: "0.95rem", color: "#555" }}>
+              {etapaActual}
             </p>
           </div>
         )}
 
-        {/* Visor de Resultados */}
+        {/* Visor de Resultados en Formato JSON */}
         {resultado && (
           <div style={{
             backgroundColor: "#ffffff",
             padding: "25px",
             borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            borderTop: "5px solid #34b8a9"
           }}>
-            <h3 style={{ marginTop: 0, color: "#106057", fontSize: "1.1rem" }}>
-              Respuesta recibida: <span style={{ color: "#34b8a9" }}>{tipoPrueba}</span>
+            <h3 style={{ marginTop: 0, color: "#106057", fontSize: "1.2rem" }}>
+              📋 Resultado de la Asesoría Financiera Plaris
             </h3>
+            
+            {/* badge de categoría asignada */}
+            {resultado.clasificacionFlash && (
+              <div style={{
+                display: "inline-block",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                fontWeight: "bold",
+                backgroundColor: 
+                  resultado.clasificacionFlash.categoria === 'excelente' ? '#2ecc71' :
+                  resultado.clasificacionFlash.categoria === 'viable' ? '#3498db' :
+                  resultado.clasificacionFlash.categoria === 'arriesgado' ? '#f39c12' : '#e74c3c',
+                color: '#fff',
+                marginBottom: "15px"
+              }}>
+                Clasificación: {resultado.clasificacionFlash.categoria?.toUpperCase()}
+              </div>
+            )}
+
             <pre style={{
-              backgroundColor: "#222",
-              color: "#a6e22e",
-              padding: "15px",
+              backgroundColor: "#1e1e1e",
+              color: "#60a5fa",
+              padding: "18px",
               borderRadius: "8px",
               overflowX: "auto",
               fontSize: "0.88rem",
-              lineHeight: "1.4"
+              lineHeight: "1.5"
             }}>
               {JSON.stringify(resultado, null, 2)}
             </pre>
@@ -190,5 +483,23 @@ function App() {
     </div>
   );
 }
+
+// Estilos auxiliares reutilizables
+const labelStyle = {
+  display: "block",
+  fontSize: "0.9rem",
+  fontWeight: "600",
+  color: "#106057",
+  marginBottom: "6px"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "6px",
+  border: "1px solid #ccc",
+  fontSize: "0.95rem",
+  boxSizing: "border-box"
+};
 
 export default App;
