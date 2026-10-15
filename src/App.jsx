@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ResultadoAsesoria from './components/ResultadoAsesoria';
 import { 
   clasificarViabilidadMeta, 
   generarPlanEstandar, 
@@ -36,10 +37,13 @@ function App() {
   const [resultado, setResultado] = useState(null);
 
   // Manejadores de cambios en los inputs
-  const handleDatosFinancierosChange = (e) => {
-    const { name, value } = e.target;
-    setDatosFinancieros(prev => ({ ...prev, [name]: Number(value) }));
-  };
+const handleDatosFinancierosChange = (e) => {
+  const { name, value } = e.target;
+  setDatosFinancieros(prev => ({
+    ...prev,
+    [name]: name === 'ahorroParaMeta' && value === '' ? undefined : Number(value)
+  }));
+};
 
   const handleMetaChange = (e) => {
     const { name, value } = e.target;
@@ -52,7 +56,7 @@ function App() {
   const handleDeudaChange = (index, e) => {
     const { name, value } = e.target;
     const nuevasDeudas = [...deudas];
-    nuevasDeudas[index][name] = name === 'monto' ? Number(value) : value;
+    nuevasDeudas[index] = { ...nuevasDeudas[index], [name]: name === 'monto' ? Number(value) : value };
     setDeudas(nuevasDeudas);
   };
 
@@ -72,8 +76,9 @@ function App() {
 
     // 1. Paso A: Clasificación Flash con llama3.2:3b
     setEtapaActual('1/2 Clasificando viabilidad de la meta (llama3.2:3b)...');
-    const clasificacion = await clasificarViabilidadMeta(datosFinancieros, meta);
-
+    const clasificacion = await clasificarViabilidadMeta(
+      datosFinancieros, meta, tipoPlan === 'avanzado' ? deudas : []
+    );
     if (clasificacion.error) {
       setResultado(clasificacion);
       setLoading(false);
@@ -242,6 +247,17 @@ function App() {
                   onChange={handleDatosFinancierosChange}
                   style={inputStyle}
                   required
+                />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={labelStyle}>De ese ahorro, ¿cuánto es para la meta? ($) — opcional:</label>
+                <input
+                  type="number"
+                  name="ahorroParaMeta"
+                  value={datosFinancieros.ahorroParaMeta ?? ''}
+                  onChange={handleDatosFinancierosChange}
+                  style={inputStyle}
+                  placeholder="Vacío = se llena primero el fondo de emergencia"
                 />
               </div>
             </div>
@@ -435,49 +451,8 @@ function App() {
         )}
 
         {/* Visor de Resultados en Formato JSON */}
-        {resultado && (
-          <div style={{
-            backgroundColor: "#ffffff",
-            padding: "25px",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-            borderTop: "5px solid #34b8a9"
-          }}>
-            <h3 style={{ marginTop: 0, color: "#106057", fontSize: "1.2rem" }}>
-              📋 Resultado de la Asesoría Financiera Plaris
-            </h3>
-            
-            {/* badge de categoría asignada */}
-            {resultado.clasificacionFlash && (
-              <div style={{
-                display: "inline-block",
-                padding: "6px 14px",
-                borderRadius: "20px",
-                fontWeight: "bold",
-                backgroundColor: 
-                  resultado.clasificacionFlash.categoria === 'excelente' ? '#2ecc71' :
-                  resultado.clasificacionFlash.categoria === 'viable' ? '#3498db' :
-                  resultado.clasificacionFlash.categoria === 'arriesgado' ? '#f39c12' : '#e74c3c',
-                color: '#fff',
-                marginBottom: "15px"
-              }}>
-                Clasificación: {resultado.clasificacionFlash.categoria?.toUpperCase()}
-              </div>
-            )}
-
-            <pre style={{
-              backgroundColor: "#1e1e1e",
-              color: "#60a5fa",
-              padding: "18px",
-              borderRadius: "8px",
-              overflowX: "auto",
-              fontSize: "0.88rem",
-              lineHeight: "1.5"
-            }}>
-              {JSON.stringify(resultado, null, 2)}
-            </pre>
-          </div>
-        )}
+        {/* Resultados */}
+          {resultado && <ResultadoAsesoria resultado={resultado} />}
 
       </div>
     </div>

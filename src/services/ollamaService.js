@@ -1,158 +1,304 @@
-// Servicio centralizado para conectar React con Ollama local (Meta Llama)
+import { calcularMetricasFinancieras, formatearMoneda as $ } from '../utils/calculadoraFinanciera';
 
 const OLLAMA_HOST = "http://localhost:11434";
 
+/* ============================================================
+ * 1. CLIENTE GENÉRICO
+ * ============================================================ */
+
 /**
- * Función genérica para consumir los modelos de Ollama
+ * @param {string} model
+ * @param {string} prompt
+ * @param {object} opciones
+ *   - system:     instrucciones fijas del asesor (rol, reglas, tono)
+ *   - formato:    objeto JSON Schema (salida estructurada) | "json" | undefined (texto libre)
+ *   - numPredict: máximo de tokens de salida
+ *   - reintentos: veces que se reintenta si el JSON llega inválido/cortado
  */
-export async function consultarOllama(model, prompt, jsonMode = false) {
-  try {
-    const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+export async function consultarOllama(
+  model,
+  prompt,
+  { system, formato, numPredict = 900, reintentos = 1 } = {}
+) {
+  const cuerpo = {
+    model,
+    prompt,
+    system,                 // undefined se omite solo en JSON.stringify
+    format: formato,
+    stream: false,
+    keep_alive: "10m",      // evita recargar el modelo en cada consulta
+    options: {
+      num_predict: numPredict,
+      num_ctx: 4096,
+      temperature: 0.3,
+      num_thread: 4
+    }
+  };
+
+  const llamar = (body) =>
+    fetch(`${OLLAMA_HOST}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: model,
-        prompt: prompt,
-        format: jsonMode ? "json" : undefined,
-        stream: false,
-      }),
+      body: JSON.stringify(body)
     });
 
-    if (!response.ok) {
-      throw new Error(`Error en el servidor de Ollama: ${response.statusText}`);
-    }
+  try {
+    for (let intento = 0; intento <= reintentos; intento++) {
+      let response = await llamar(cuerpo);
 
-    const data = await response.json();
-    
-    if (jsonMode) {
+      // Ollama antiguo sin soporte de esquemas -> modo JSON simple
+      if (!response.ok && formato && typeof formato === "object") {
+        response = await llamar({ ...cuerpo, format: "json" });
+      }
+      if (!response.ok) {
+        throw new Error(`Error en el servidor de Ollama: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (!formato) return data.response;
+
       try {
         return JSON.parse(data.response);
-      } catch (e) {
-        console.error("El modelo no devolvió un JSON válido:", data.response);
-        return { error: "Formato JSON inválido", raw: data.response };
+      } catch {
+        console.warn(`JSON inválido (intento ${intento + 1}):`, data.response);
+        if (intento === reintentos) {
+          return { error: "Formato JSON inválido", raw: data.response };
+        }
       }
     }
-
-    return data.response;
   } catch (error) {
     console.error("Error conectando con Ollama:", error);
     return { error: "No se pudo conectar con Ollama. Asegúrate de que esté abierto." };
   }
 }
 
-/**
- * 1. Clasificación Flash (Usa llama3.2:3b)
- * Evalúa viabilidad teniendo en cuenta Ahorros + Flujo mensual neto.
- */
-export async function clasificarViabilidadMeta(datosFinancieros, meta) {
-  const prompt = `
-    Analiza con rigor matemático y financiero la viabilidad de la meta del usuario:
-    - Ingresos Mensuales: $${datosFinancieros.ingresosMensuales}
-    - Gastos Fijos: $${datosFinancieros.gastosFijos}
-    - Gastos Variables: $${datosFinancieros.gastosVariables}
-    - Ahorro Actual Disponible: $${datosFinancieros.ahorroActual}
-    - Meta deseada: ${meta.nombre}, Costo: $${meta.costo}, Plazo deseado por el usuario: ${meta.plazoDias} días.
-    - Situación explicada: "${meta.descripcionProblematica}"
+/* ============================================================
+ * 2. PROMPTS: ROL + DATOS
+ * ============================================================ */
 
-    REGLAS DE EVALUACIÓN:
-    1. Calcula la capacidad real de ahorro mensual: (Ingresos - Gastos Fijos - Gastos Variables).
-    2. Considera que el usuario PUEDE usar parte de su Ahorro Actual ($${datosFinancieros.ahorroActual}), pero evalúa si usarlo lo deja en riesgo sin fondo de emergencia.
-    3. Evalúa si con su ahorro libre mensual + ahorros actuales alcanza la meta en los ${meta.plazoDias} días solicitados.
+const SYSTEM_PLARIS = `Eres Plaris, un asesor de finanzas personales para usuarios en México.
+Hablas en español claro y cercano, sin tecnicismos innecesarios.
 
-    Clasifica estrictamente en una de estas 4 categorías:
-    - "excelente": Alcanza la meta holgadamente sin poner en riesgo su estabilidad ni agotar sus ahorros de emergencia.
-    - "viable": Alcanza la meta a tiempo con disciplina, usando un porcentaje seguro de su sobrante o ahorros.
-    - "arriesgado": Para lograrlo en el plazo debe usar casi todo su ahorro actual o recortar demasiado sus gastos variables.
-    - "Imposible": Matemáticamente el sobrante mensual + ahorros no alcanzan el costo en los días solicitados, o implica quedarse totalmente en $0.
+REGLAS:
+1. Usa ÚNICAMENTE las cifras del bloque DATOS. Nunca calcules, estimes ni inventes montos, porcentajes o plazos nuevos.
+2. Distingue SIEMPRE dos fondos: el "Fondo de emergencia" (intocable, para imprevistos) y el "Fondo de la meta" (el dinero que se junta para la compra).
+3. Tono: empático pero honesto. Si el plan es riesgoso, dilo claro y explica por qué, sin regañar ni juzgar.
+4. Sé concreto: cada consejo debe poder aplicarse esta semana.
+5. Si el usuario describió su situación, respóndele directamente a eso.
+6. Responde SOLO con el JSON pedido, sin texto extra.`;
 
-    Responde únicamente en formato JSON estricto:
-    {
-      "categoria": "Imposible" | "arriesgado" | "viable" | "excelente",
-      "mensajeEvaluacion": "Explicación directa del por qué de la categoría, indicando montos exactos de sobrante y ahorros."
-    }
-  `;
-  return await consultarOllama("llama3.2:3b", prompt, true);
+const limpiar = (t) => String(t ?? "").replace(/["\n\r]+/g, " ").slice(0, 500);
+
+function bloqueDatos(datos, meta, m) {
+  const e = m.fondos.emergencia;
+  const f = m.fondos.meta;
+  const L = [];
+
+  L.push(`- Meta: "${limpiar(meta.nombre)}" por ${$(meta.costo)}, plazo deseado: ${meta.plazoDias} días.`);
+  L.push(`- Situación que describe el usuario: "${limpiar(meta.descripcionProblematica)}"`);
+  L.push(`- Ingreso mensual: ${$(datos.ingresosMensuales)}. Gastos fijos: ${$(datos.gastosFijos)}. Gastos variables: ${$(datos.gastosVariables)}.`);
+  L.push(`- Flujo libre: ${$(m.flujoLibreMensual)} al mes (≈ ${$(m.flujoLibreSemanal)} por semana).`);
+  L.push(`- FONDO DE EMERGENCIA: tiene ${$(e.actual)} de ${$(e.objetivo)} recomendados (${e.porcentaje}%). Cubre ${e.mesesCubiertos} de ${e.meses} meses de gastos fijos.`);
+  L.push(`- FONDO DE LA META: tiene ${$(f.actual)} de ${$(f.objetivo)} (${f.porcentaje}%).`);
+
+  if (m.flujoLibreSemanal > 0) {
+    L.push(`- Reparto semanal propuesto del flujo libre: ${m.reparto.meta}% a la meta (${$(m.aporteSemanalInicial.meta)}), ${m.reparto.emergencia}% a emergencia (${$(m.aporteSemanalInicial.emergencia)})${m.reparto.deuda ? `, ${m.reparto.deuda}% a deudas (${$(m.aporteSemanalInicial.deuda)})` : ""}.`);
+  } else {
+    L.push(`- El usuario NO tiene flujo libre: sus gastos igualan o superan sus ingresos.`);
+  }
+
+  if (m.alcanzable) {
+    L.push(`- Con ese ritmo la meta se completa en ${m.semanasParaMeta} semanas (${m.diasParaMeta} días). ${m.cumplePlazoSolicitado ? "SÍ" : "NO"} cumple el plazo deseado.`);
+  } else {
+    L.push(`- Con el flujo actual la meta NO se alcanza en 2 años.`);
+  }
+
+  if (m.brechaSemanal > 0) {
+    L.push(`- Para cumplir el plazo deseado haría falta depositar ${$(m.aporteSemanalNecesario)} por semana a la meta; hoy se proponen ${$(m.aporteSemanalInicial.meta)} (brecha de ${$(m.brechaSemanal)} por semana).`);
+  }
+  if (m.categoria === "imposible") {
+    L.push(`- Aun destinando el 100% del flujo libre, en el plazo deseado solo se juntarían ${$(m.maxPosibleEnPlazo)} de los ${$(meta.costo)} necesarios.`);
+  }
+
+  return L.join("\n");
 }
 
-/**
- * 2. Plan Estándar (Usa llama3.1:8b)
- * Regaña/corrige al usuario si el plan es malo y proyecta semanas exactas hasta alcanzar la meta.
- */
+function bloqueDeudas(m) {
+  if (!m.deudas) return "- El usuario no reporta deudas.";
+  const d = m.deudas;
+  const lista = d.detalle.map((x) => `${limpiar(x.concepto)}: ${$(x.monto)} al ${x.tasa}% anual`).join("; ");
+  return [
+    `- Deudas: ${lista}.`,
+    `- Total adeudado: ${$(d.total)}. Solo en intereses se van ≈ ${$(d.interesMensualEstimado)} al mes.`,
+    d.semanasParaLiquidar === null
+      ? `- Al llegar a la meta, todavía quedarían ${$(d.saldoAlFinal)} de deuda.`
+      : `- Con el plan, las deudas quedan liquidadas en la semana ${d.semanasParaLiquidar}.`,
+    `- Estrategia aplicada: método avalancha (primero la deuda de mayor interés).`
+  ].join("\n");
+}
+
+/** Rellena campos faltantes para que la UI nunca truene por una respuesta incompleta */
+function completar(resp, campos) {
+  const salida = { ...resp };
+  for (const [clave, defecto] of Object.entries(campos)) {
+    if (salida[clave] === undefined || salida[clave] === null || salida[clave] === "") {
+      salida[clave] = defecto;
+    }
+  }
+  return salida;
+}
+
+/* ============================================================
+ * 3. CLASIFICACIÓN FLASH (llama3.2:3b)
+ *    La categoría la decide JS (determinista).
+ *    La IA solo redacta el mensaje.
+ * ============================================================ */
+
+const ESQUEMA_CLASIFICACION = {
+  type: "object",
+  properties: { mensajeEvaluacion: { type: "string" } },
+  required: ["mensajeEvaluacion"]
+};
+
+const MENSAJES_FALLBACK = {
+  excelente: "Tu meta es muy alcanzable con tu ritmo de ahorro actual.",
+  viable: "Tu meta es alcanzable en el plazo que pides si mantienes tu ritmo de ahorro.",
+  arriesgado: "Podrías lograrlo, pero solo sacrificando tu fondo de emergencia o el pago de deudas.",
+  imposible: "Con tus ingresos y gastos actuales, esta meta no es alcanzable en ese plazo."
+};
+
+export async function clasificarViabilidadMeta(datosFinancieros, meta, deudas = []) {
+  const m = calcularMetricasFinancieras(datosFinancieros, meta, deudas);
+
+  const prompt = `DATOS:
+${bloqueDatos(datosFinancieros, meta, m)}
+
+CLASIFICACIÓN DEL SISTEMA: "${m.categoria}" (excelente / viable / arriesgado / imposible).
+
+TAREA: Escribe "mensajeEvaluacion": exactamente 2 oraciones que justifiquen esa clasificación usando 1 o 2 cifras de DATOS. No cambies la clasificación.`;
+
+  const resp = await consultarOllama("llama3.2:3b", prompt, {
+    system: SYSTEM_PLARIS,
+    formato: ESQUEMA_CLASIFICACION,
+    numPredict: 250
+  });
+
+  // Error de conexión real -> la app lo muestra
+  if (resp?.error && !resp.raw) return resp;
+
+  return {
+    categoria: m.categoria,
+    mensajeEvaluacion: resp?.mensajeEvaluacion || MENSAJES_FALLBACK[m.categoria]
+  };
+}
+
+/* ============================================================
+ * 4. PLAN ESTÁNDAR (llama3.1:8b)
+ * ============================================================ */
+
+const ESQUEMA_PLAN_ESTANDAR = {
+  type: "object",
+  properties: {
+    diagnostico: { type: "string" },
+    analisisFondoEmergencia: { type: "string" },
+    analisisFondoMeta: { type: "string" },
+    planSugerido: { type: "string" },
+    puntosClave: { type: "array", items: { type: "string" } }
+  },
+  required: ["diagnostico", "analisisFondoEmergencia", "analisisFondoMeta", "planSugerido", "puntosClave"]
+};
+
 export async function generarPlanEstandar(datosFinancieros, meta, clasificacionPrevia) {
-  const prompt = `
-    Eres el asesor financiero principal de Plaris. Tu estilo es honesto, profesional, directo y educador.
+  const m = calcularMetricasFinancieras(datosFinancieros, meta);
 
-    DATOS DEL USUARIO:
-    - Ingresos Mensuales: $${datosFinancieros.ingresosMensuales}
-    - Gastos Fijos: $${datosFinancieros.gastosFijos} | Gastos Variables: $${datosFinancieros.gastosVariables}
-    - Capacidad de Ahorro Mensual Libre: $${datosFinancieros.ingresosMensuales - datosFinancieros.gastosFijos - datosFinancieros.gastosVariables}
-    - Ahorro Actual en Banco: $${datosFinancieros.ahorroActual}
-    - Meta del usuario: ${meta.nombre} ($${meta.costo}) en ${meta.plazoDias} días.
-    - Situación del usuario: "${meta.descripcionProblematica}"
-    - Diagnóstico rápido previo: "${clasificacionPrevia.categoria}" (${clasificacionPrevia.mensajeEvaluacion})
+  const prompt = `DATOS:
+${bloqueDatos(datosFinancieros, meta, m)}
 
-    INSTRUCCIONES CLAVE DE ASESORÍA:
-    1. SI EL PLAN DEL USUARIO ES MALO O ARRIESGADO: Regáñalo constructivamente. Explícale con franqueza por qué querer comprar esto en ${meta.plazoDias} días o usar todo su ahorro es una mala idea que pone en peligro sus finanzas.
-    2. EXPLICA EL USO DE AHORROS: Si recomienda usar parte del ahorro actual ($${datosFinancieros.ahorroActual}), aclara qué porcentaje es seguro gastar y cuánto DEBE conservarse intacto como fondo de emergencia.
-    3. PLAN CORREGIDO Y VIABLE: Diseña un plan realista basado en su capacidad de ahorro real mensual sobrante.
-    4. PROYECCION EXACTA DE LA GRÁFICA (REGLA ESTRICTA):
-       - Calcula cuánto dinero puede destinar semanalmente.
-       - La lista 'datosGrafica' debe empezar en la Semana 1 y sumar progresivamente hasta ALCANZAR O SUPERAR LEVEMENTE el costo de $${meta.costo}.
-       - ¡DETÉN LA LISTA DE LA GRÁFICA EXACTAMENTE EN LA SEMANA DONDE SE COMPLETA LA META! No generes semanas de más (no hagas 60 semanas si la meta se cumple en la semana 8 o 12).
+CLASIFICACIÓN DEL SISTEMA: "${m.categoria}"
 
-    Devuelve estrictamente un objeto JSON:
-    {
-      "criticaYRegaño": "Mensaje directo evaluando si la idea del usuario es buena o mala y corrigiéndolo.",
-      "analisisAhorroActual": "Explicación de si se tocarán los $${datosFinancieros.ahorroActual} actuales o no, y el riesgo de hacerlo.",
-      "planCorregidoSugerido": "Propuesta de plazo y estrategia realista propuesta por la IA.",
-      "puntosClave": [
-        "Punto 1 con regla de oro financiera",
-        "Punto 2 sobre cómo mantener el fondo de emergencia"
-      ],
-      "datosGrafica": [
-        {"etiqueta": "Semana 1", "ahorroAcumulado": number},
-        {"etiqueta": "Semana 2", "ahorroAcumulado": number}
-      ]
-    }
-  `;
-  return await consultarOllama("llama3.1:8b", prompt, true);
+TAREA: Redacta la asesoría con estos campos:
+- diagnostico: 2 o 3 oraciones. Si la clasificación es "arriesgado" o "imposible", explica con honestidad por qué el plazo de ${meta.plazoDias} días compromete sus finanzas; si es "viable" o "excelente", confírmalo y motívalo.
+- analisisFondoEmergencia: 2 oraciones sobre el estado de su fondo de emergencia y por qué NO debe usarlo para la meta.
+- analisisFondoMeta: 2 oraciones sobre cuánto depositará cada semana a su fondo de la meta y en cuánto tiempo llega.
+- planSugerido: la recomendación concreta (si el plazo no es realista, propón el plazo de DATOS en vez del deseado).
+- puntosClave: EXACTAMENTE 3 consejos cortos y accionables, adaptados a la situación que describió el usuario.`;
+
+  const resp = await consultarOllama("llama3.1:8b", prompt, {
+    system: SYSTEM_PLARIS,
+    formato: ESQUEMA_PLAN_ESTANDAR,
+    numPredict: 900
+  });
+  if (resp.error) return resp;
+
+  return {
+    ...completar(resp, {
+      diagnostico: MENSAJES_FALLBACK[m.categoria],
+      analisisFondoEmergencia: "",
+      analisisFondoMeta: "",
+      planSugerido: "",
+      puntosClave: []
+    }),
+    categoria: m.categoria,
+    calculos: m // fondos, reparto, planSemanal... (todo calculado por JS)
+  };
 }
 
-/**
- * 3. Plan Avanzado CoT (Usa llama3.1:8b)
- * Súper análisis financiero profundo con Chain of Thought, gestión de deudas y amortización.
- */
+/* ============================================================
+ * 5. PLAN AVANZADO CoT (llama3.1:8b)
+ *    "razonamiento" va PRIMERO en el esquema: el modelo escribe sus
+ *    pasos antes de concluir (eso es lo que hace útil al CoT).
+ * ============================================================ */
+
+const ESQUEMA_PLAN_AVANZADO = {
+  type: "object",
+  properties: {
+    razonamiento: { type: "array", items: { type: "string" } },
+    llamadoDeAtencion: { type: "string" },
+    analisisRiesgoAhorroYDeuda: { type: "string" },
+    estrategiaRecomendada: { type: "array", items: { type: "string" } },
+    conclusionYVeredicto: { type: "string" }
+  },
+  required: ["razonamiento", "llamadoDeAtencion", "analisisRiesgoAhorroYDeuda", "estrategiaRecomendada", "conclusionYVeredicto"]
+};
+
 export async function generarPlanAvanzadoCoT(datosFinancieros, deudas, meta, clasificacionPrevia) {
-  const prompt = `
-    [MODO ANÁLISIS FINANCIERO PROFUNDIZADO - CHAIN OF THOUGHT]
-    Actúa como un Asesor Financiero Senior. Analiza minuciosamente el plan del usuario.
+  const m = calcularMetricasFinancieras(datosFinancieros, meta, deudas);
 
-    DATOS COMPLETOS:
-    - Ingresos Mensuales: $${datosFinancieros.ingresosMensuales}
-    - Gastos Fijos: $${datosFinancieros.gastosFijos} | Gastos Variables: $${datosFinancieros.gastosVariables}
-    - Flujo de Caja Libre Mensual: $${datosFinancieros.ingresosMensuales - datosFinancieros.gastosFijos - datosFinancieros.gastosVariables}
-    - Ahorro Actual Disponible: $${datosFinancieros.ahorroActual}
-    - Meta propuesta: ${meta.nombre} ($${meta.costo}) en ${meta.plazoDias} días.
-    - Justificación del usuario: "${meta.descripcionProblematica}"
-    - Deudas Registradas: ${JSON.stringify(deudas)}
-    - Diagnóstico Flash: "${clasificacionPrevia.categoria}"
+  const prompt = `DATOS:
+${bloqueDatos(datosFinancieros, meta, m)}
+${bloqueDeudas(m)}
 
-    PASOS DE RAZONAMIENTO (Chain of Thought):
-    1. Evalúa si las deudas actuales generan intereses altos que superen el beneficio de comprar la meta.
-    2. Determina si el deseo del usuario es un capricho o una necesidad real frente a su liquidez.
-    3. Si el plan es imprudente, adviértele las consecuencias financieras (quedarse en $0, pagar intereses moratorios, etc.).
-    4. Proponle una reestructuración completa de metas: prioridad de deudas vs. ahorro para la meta.
+CLASIFICACIÓN DEL SISTEMA: "${m.categoria}"
 
-    Devuelve estrictamente un objeto JSON:
-    {
-      "llamoDeAtencion": "Evaluación crítica y sincera del plan del usuario y sus errores de juicio financiero.",
-      "analisisRiesgoAhorroYDeuda": "Análisis profundo sobre tocar el fondo de emergencia y el impacto de los intereses de sus deudas.",
-      "estrategiaCoTRecomendada": "Paso a paso lógico recomendado para sanear finanzas y lograr la meta sin peligro.",
-      "planAmortizacion": [
-        {"periodo": "Mes 1", "montoDestinadoAhorro": number, "montoDestinadoDeuda": number, "comentario": "string"}
-      ],
-      "conclusionYVeredicto": "Explicación de cuándo y cómo podrá comprar su meta de forma 100% segura."
-    }
-  `;
-  return await consultarOllama("llama3.1:8b", prompt, true);
+TAREA: Razona paso a paso y luego concluye. Llena los campos EN ESTE ORDEN:
+1. razonamiento: EXACTAMENTE 4 pasos, una oración cada uno, usando solo cifras de DATOS:
+   Paso 1 - capacidad real de ahorro (flujo libre).
+   Paso 2 - estado del fondo de emergencia y del fondo de la meta.
+   Paso 3 - deudas vs. meta: qué conviene priorizar y por qué (considera el costo de los intereses).
+   Paso 4 - decisión: ¿el plazo deseado es realista o conviene el plazo calculado?
+2. llamadoDeAtencion: 2 oraciones directas y respetuosas sobre el mayor error o riesgo del plan del usuario.
+3. analisisRiesgoAhorroYDeuda: 2 o 3 oraciones sobre el peligro de gastar en la meta mientras hay deudas y el fondo de emergencia está ${m.fondos.emergencia.porcentaje}% completo.
+4. estrategiaRecomendada: entre 4 y 5 acciones en orden cronológico (qué hacer esta semana, este mes, al terminar las deudas, al llegar a la meta).
+5. conclusionYVeredicto: 2 oraciones con el veredicto final y una frase de ánimo.
+
+No incluyas tablas ni montos semanales: el sistema los muestra aparte.`;
+
+  const resp = await consultarOllama("llama3.1:8b", prompt, {
+    system: SYSTEM_PLARIS,
+    formato: ESQUEMA_PLAN_AVANZADO,
+    numPredict: 1400
+  });
+  if (resp.error) return resp;
+
+  return {
+    ...completar(resp, {
+      razonamiento: [],
+      llamadoDeAtencion: MENSAJES_FALLBACK[m.categoria],
+      analisisRiesgoAhorroYDeuda: "",
+      estrategiaRecomendada: [],
+      conclusionYVeredicto: ""
+    }),
+    categoria: m.categoria,
+    calculos: m // incluye resumenMensual (reemplaza al planAmortizacion de la IA)
+  };
 }
