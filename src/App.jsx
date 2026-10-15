@@ -239,7 +239,7 @@ const handleDatosFinancierosChange = (e) => {
               </div>
 
               <div>
-                <label style={labelStyle}>Ahorro Actual Disponible ($):</label>
+                <label style={labelStyle}>Ahorro/Sobrante Actual Disponible Mensual ($):</label>
                 <input
                   type="number"
                   name="ahorroActual"

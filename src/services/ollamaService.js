@@ -170,20 +170,32 @@ const MENSAJES_FALLBACK = {
 export async function clasificarViabilidadMeta(datosFinancieros, meta, deudas = []) {
   const m = calcularMetricasFinancieras(datosFinancieros, meta, deudas);
 
-  const prompt = `DATOS:
-${bloqueDatos(datosFinancieros, meta, m)}
+  const prompt = `DATOS DE EVALUACIÓN:
+- Meta: "${limpiar(meta.nombre)}" por ${$(meta.costo)} a un plazo de ${meta.plazoDias} días.
+- ¿Logra la meta en el plazo deseado?: ${m.cumplePlazoSolicitado ? "SÍ" : "NO"} (el plazo real calculado es de ${m.diasParaMeta} días / ${m.semanasParaMeta} semanas).
+- Sobrante semanal real destinado a la meta: ${$(m.aporteSemanalInicial.meta)}.
+- Sobrante semanal necesario para el plazo deseado: ${$(m.aporteSemanalNecesario)}.
+- Brecha semanal faltante: ${$(m.brechaSemanal)}.
+- Reparto del sobrante semanal: ${m.reparto.meta}% a la meta y ${m.reparto.emergencia}% al fondo de emergencia.
+- Clasificación determinista del sistema: "${m.categoria}".
 
-CLASIFICACIÓN DEL SISTEMA: "${m.categoria}" (excelente / viable / arriesgado / imposible).
+INSTRUCCIONES DE REDACCIÓN PARA "mensajeEvaluacion":
+Redacta exactamente 3 oraciones breves y ordenadas en el siguiente orden estricto:
 
-TAREA: Escribe "mensajeEvaluacion": exactamente 2 oraciones que justifiquen esa clasificación usando 1 o 2 cifras de DATOS. No cambies la clasificación.`;
+1. ORACIÓN 1 (Veredicto del plazo): Indica claramente si el plan propone lograr o no la meta en el plazo de ${meta.plazoDias} días.
+2. ORACIÓN 2 (Comparativa matemática): 
+   - Si NO es posible: Compara el sobrante semanal real destinado a la meta (${$(m.aporteSemanalInicial.meta)}) contra el sobrante semanal necesario (${$(m.aporteSemanalNecesario)}), e indica la brecha faltante de ${$(m.brechaSemanal)} por semana.
+   - Si SÍ es posible: Explica por qué el sobrante semanal real (${$(m.aporteSemanalInicial.meta)}) cubre o supera la cuota semanal necesaria (${$(m.aporteSemanalNecesario)}).
+3. ORACIÓN 3 (Seguridad del reparto): Menciona qué porcentaje del sobrante se destina a la meta (${m.reparto.meta}%) y qué porcentaje va al fondo de ahorro (${m.reparto.emergencia}%), señalando si este esquema es seguro o pone en riesgo la estabilidad.
+
+Regla estricta: Usa solo las cifras entregadas en DATOS DE EVALUACIÓN. Responde exclusivamente con el JSON schema solicitado.`;
 
   const resp = await consultarOllama("llama3.2:3b", prompt, {
     system: SYSTEM_PLARIS,
     formato: ESQUEMA_CLASIFICACION,
-    numPredict: 250
+    numPredict: 300
   });
 
-  // Error de conexión real -> la app lo muestra
   if (resp?.error && !resp.raw) return resp;
 
   return {
