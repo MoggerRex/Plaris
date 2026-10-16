@@ -1,4 +1,3 @@
-import React from 'react';
 import { formatearMoneda as $ } from '../utils/calculadoraFinanciera';
 
 const COLORES = {
@@ -24,9 +23,10 @@ const tarjeta = {
 };
 
 function Barra({ porcentaje, color }) {
+  const valor = Math.max(0, Math.min(100, Number(porcentaje) || 0));
   return (
     <div style={{ background: '#e8eeee', borderRadius: 6, height: 10, overflow: 'hidden' }}>
-      <div style={{ width: `${porcentaje}%`, background: color, height: '100%', transition: 'width 0.4s' }} />
+      <div style={{ width: `${valor}%`, background: color, height: '100%', transition: 'width 0.4s' }} />
     </div>
   );
 }
@@ -57,9 +57,11 @@ function Seccion({ titulo, children, acento = COLORES.secundario }) {
 
 const Lista = ({ items, ordenada }) => {
   const Tag = ordenada ? 'ol' : 'ul';
+  const lista = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (!lista.length) return <span>No hay elementos adicionales disponibles.</span>;
   return (
     <Tag style={{ margin: 0, paddingLeft: 20 }}>
-      {items.map((x, i) => <li key={i} style={{ marginBottom: 4 }}>{x}</li>)}
+      {lista.map((x, i) => <li key={`${i}-${String(x).slice(0, 20)}`} style={{ marginBottom: 4 }}>{x}</li>)}
     </Tag>
   );
 };
@@ -76,10 +78,23 @@ export default function ResultadoAsesoria({ resultado }) {
     );
   }
 
-  const { plan, clasificacionFlash: clf, asesoria: a } = resultado;
+  const { plan, clasificacionFlash: clf, asesoria: a } = resultado || {};
+  if (!clf || !a || !a.calculos) {
+    return (
+      <div style={{ ...tarjeta, borderTop: '5px solid #e74c3c' }}>
+        <strong style={{ color: '#e74c3c' }}>La respuesta está incompleta</strong>
+        <p style={{ marginBottom: 0 }}>No se recibieron todos los datos para mostrar la asesoría. Intenta generarla de nuevo.</p>
+      </div>
+    );
+  }
   const c = a.calculos;
-  const esAvanzado = Boolean(a.razonamiento);
+  const esAvanzado = Array.isArray(a.razonamiento);
   const hayDeudas = Boolean(c.deudas);
+  const fondos = c.fondos || {};
+  const emergencia = fondos.emergencia || {};
+  const fondoMeta = fondos.meta || {};
+  const planSemanal = Array.isArray(c.planSemanal) ? c.planSemanal : [];
+  const resumenMensual = Array.isArray(c.resumenMensual) ? c.resumenMensual : [];
 
   return (
     <div>
@@ -92,7 +107,18 @@ export default function ResultadoAsesoria({ resultado }) {
         }}>
           {clf.categoria.toUpperCase()}
         </span>
-        <p style={{ margin: '12px 0 0', color: '#333', lineHeight: 1.55 }}>{clf.mensajeEvaluacion}</p>
+        {Array.isArray(clf.detalleEvaluacion) ? (
+          <div style={{ display: 'grid', gap: 14, marginTop: 18 }}>
+            {clf.detalleEvaluacion.map(({ titulo, texto }) => (
+              <section key={titulo} style={{ borderLeft: `3px solid ${COLORES.secundario}`, paddingLeft: 12 }}>
+                <h4 style={{ margin: '0 0 4px', color: COLORES.primario }}>{titulo}</h4>
+                <p style={{ margin: 0, color: '#333', lineHeight: 1.55, textAlign: 'left' }}>{texto}</p>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: '12px 0 0', color: '#333', lineHeight: 1.55 }}>{clf.mensajeEvaluacion}</p>
+        )}
       </div>
 
       {/* Los dos fondos */}
@@ -101,18 +127,18 @@ export default function ResultadoAsesoria({ resultado }) {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <FondoCard
             titulo="🛡️ Fondo de emergencia"
-            subtitulo={`Meta: ${c.fondos.emergencia.meses} meses de gastos fijos · cubre ${c.fondos.emergencia.mesesCubiertos} meses`}
-            actual={c.fondos.emergencia.actual}
-            objetivo={c.fondos.emergencia.objetivo}
-            porcentaje={c.fondos.emergencia.porcentaje}
+            subtitulo={`Meta: ${emergencia.meses ?? 3} meses de gastos fijos · cubre ${emergencia.mesesCubiertos ?? 0} meses`}
+            actual={emergencia.actual ?? 0}
+            objetivo={emergencia.objetivo ?? 0}
+            porcentaje={emergencia.porcentaje ?? 0}
             color={COLORES.primario}
           />
           <FondoCard
             titulo={`🎯 Fondo de la meta`}
             subtitulo="Dinero apartado solo para tu compra"
-            actual={c.fondos.meta.actual}
-            objetivo={c.fondos.meta.objetivo}
-            porcentaje={c.fondos.meta.porcentaje}
+            actual={fondoMeta.actual ?? 0}
+            objetivo={fondoMeta.objetivo ?? 0}
+            porcentaje={fondoMeta.porcentaje ?? 0}
             color={COLORES.secundario}
           />
         </div>
@@ -169,7 +195,7 @@ export default function ResultadoAsesoria({ resultado }) {
       {/* Plan semana a semana */}
       <div style={tarjeta}>
         <h3 style={{ marginTop: 0, color: COLORES.primario }}>Tu plan semana a semana</h3>
-        {c.planSemanal.length === 0 ? (
+        {planSemanal.length === 0 ? (
           <p style={{ margin: 0 }}>
             {c.alcanzable
               ? 'Ya tienes el dinero de la meta, no necesitas depositar más.'
@@ -188,7 +214,7 @@ export default function ResultadoAsesoria({ resultado }) {
                 </tr>
               </thead>
               <tbody>
-                {c.planSemanal.map((f) => (
+                {planSemanal.map((f) => (
                   <tr key={f.semana} style={{ borderTop: '1px solid #eef2f2' }}>
                     <td style={td}>{f.semana}</td>
                     <td style={td}><strong>{$(f.aporteMeta)}</strong></td>
@@ -207,7 +233,7 @@ export default function ResultadoAsesoria({ resultado }) {
       </div>
 
       {/* Resumen mensual (avanzado) */}
-      {esAvanzado && c.resumenMensual.length > 0 && (
+      {esAvanzado && resumenMensual.length > 0 && (
         <div style={tarjeta}>
           <h3 style={{ marginTop: 0, color: COLORES.primario }}>Resumen por mes</h3>
           <div style={{ overflowX: 'auto' }}>
@@ -222,7 +248,7 @@ export default function ResultadoAsesoria({ resultado }) {
                 </tr>
               </thead>
               <tbody>
-                {c.resumenMensual.map((r) => (
+                {resumenMensual.map((r) => (
                   <tr key={r.periodo} style={{ borderTop: '1px solid #eef2f2' }}>
                     <td style={td}>{r.periodo} <span style={{ color: '#888' }}>(sem. {r.semanas})</span></td>
                     <td style={td}>{$(r.aporteMeta)}</td>

@@ -1,49 +1,106 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ResultadoAsesoria from './components/ResultadoAsesoria';
 import { 
   clasificarViabilidadMeta, 
   generarPlanEstandar, 
   generarPlanAvanzadoCoT 
 } from './services/ollamaService';
+import { formatearMoneda as $, parsearTasa } from './utils/calculadoraFinanciera';
 
 function App() {
-  // Estado para la selección de plan ('estandar' | 'avanzado')
   const [tipoPlan, setTipoPlan] = useState('estandar');
 
-  // Estados del formulario para Datos Financieros
+  // Datos financieros base
   const [datosFinancieros, setDatosFinancieros] = useState({
-    ingresosMensuales: 18000,
-    gastosFijos: 8500,
-    gastosVariables: 3500,
-    ahorroActual: 6000
+    ingresosMensuales: 30000,
+    gastosFijos: 19000,
+    gastosVariables: 7000,
+    ahorroActual: 4000
   });
 
-  // Estados del formulario para la Meta / Problemática
+  // Distribución del sobrante (Meta, Emergencia, Deudas)
+  const [distribucionSobrante, setDistribucionSobrante] = useState({
+    meta: { valor: '', modo: 'porcentaje' },
+    emergencia: { valor: '', modo: 'porcentaje' },
+    deudas: { valor: '', modo: 'porcentaje' }
+  });
+
+  // Flag para rastrear si el usuario editó manualmente el campo de deudas
+  const [deudasEditadoManualmente, setDeudasEditadoManualmente] = useState(false);
+
+  // Meta u Objetivo
   const [meta, setMeta] = useState({
-    nombre: "Comprar Laptop de Trabajo",
-    costo: 22000,
-    plazoDias: 90,
-    descripcionProblematica: "Necesito renovar mi equipo principal porque falla frecuentemente, pero no quiero desarmar todo mi fondo de emergencia actual."
+    nombre: "Comprar un carro",
+    costo: 360000,
+    plazoDias: 1440,
+    descripcionProblematica: "Quiero comprar un carro, me gustaria comprarlo en 48 meses"
   });
 
-  // Estados del formulario para Deudas (exclusivo Plan Avanzado)
+  // Deudas
   const [deudas, setDeudas] = useState([
-    { concepto: "Tarjeta de Crédito Santander", monto: 5000, interesAnual: "28%" }
+    { concepto: "Tarjeta de Crédito Liverpool", monto: 6000, interesAnual: "0%" },
+    { concepto: "Tarjeta de Crédito Bancomer", monto: 10000, interesAnual: "3%" }
   ]);
 
-  // Estados de carga y resultados
   const [loading, setLoading] = useState(false);
   const [etapaActual, setEtapaActual] = useState('');
   const [resultado, setResultado] = useState(null);
 
-  // Manejadores de cambios en los inputs
-const handleDatosFinancierosChange = (e) => {
-  const { name, value } = e.target;
-  setDatosFinancieros(prev => ({
-    ...prev,
-    [name]: name === 'ahorroParaMeta' && value === '' ? undefined : Number(value)
-  }));
-};
+  // Sobrante mensual dinámico
+  const sobranteMensual = Math.max(
+    0, 
+    (datosFinancieros.ingresosMensuales || 0) - (datosFinancieros.gastosFijos || 0) - (datosFinancieros.gastosVariables || 0)
+  );
+
+  // 1. Cálculo dinámico del interés mensual total y del % mínimo necesario del sobrante
+  const interesMensualTotal = deudas.reduce((acc, d) => {
+    const m = Number(d.monto) || 0;
+    const t = parsearTasa(d.interesAnual);
+    return acc + (m * (t / 100)) / 12;
+  }, 0);
+
+  // Porcentaje mínimo recomendado para no generar intereses (si las tasas son 0%, asigna un piso estándar según deudas)
+  let pctMinimoDeudas = 0;
+  if (sobranteMensual > 0 && deudas.length > 0) {
+    if (interesMensualTotal > 0) {
+      pctMinimoDeudas = Math.min(100, Math.ceil((interesMensualTotal / sobranteMensual) * 100));
+    } else {
+      // Si el interés es 0%, se sugiere aportar al menos 10% del sobrante para abonar a capital
+      const totalDeuda = deudas.reduce((acc, d) => acc + (Number(d.monto) || 0), 0);
+      pctMinimoDeudas = totalDeuda > 0 ? 10 : 0;
+    }
+  }
+
+  // 2. Auto-rellenar el % de deudas cuando cambien deudas o sobrante (si el usuario no lo ha editado libremente)
+  useEffect(() => {
+    if (tipoPlan === 'avanzado' && deudas.length > 0 && !deudasEditadoManualmente) {
+      setDistribucionSobrante(prev => ({
+        ...prev,
+        deudas: { valor: pctMinimoDeudas, modo: 'porcentaje' }
+      }));
+    }
+  }, [deudas, sobranteMensual, tipoPlan, pctMinimoDeudas, deudasEditadoManualmente]);
+
+  const handleDatosFinancierosChange = (e) => {
+    const { name, value } = e.target;
+    setDatosFinancieros(prev => ({
+      ...prev,
+      [name]: value === '' ? 0 : Number(value)
+    }));
+  };
+
+  const handleDistribucionChange = (campo, propiedad, valor) => {
+    if (campo === 'deudas') {
+      setDeudasEditadoManualmente(true);
+    }
+    setDistribucionSobrante(prev => ({
+      ...prev,
+      [campo]: {
+        ...prev[campo],
+        [propiedad]: propiedad === 'valor' ? (valor === '' ? '' : Number(valor)) : valor
+      }
+    }));
+  };
 
   const handleMetaChange = (e) => {
     const { name, value } = e.target;
@@ -68,47 +125,169 @@ const handleDatosFinancierosChange = (e) => {
     setDeudas(deudas.filter((_, i) => i !== index));
   };
 
-  // Proceso principal al enviar el formulario
+  // Función auxiliar para renderizar cada campo de distribución
+  const renderCampoDistribucion = (llave, titulo) => {
+    const item = distribucionSobrante[llave];
+    const val = Number(item.valor) || 0;
+
+    let textoConversion = "";
+    let mensajeAlertaDeuda = null;
+
+    if (sobranteMensual > 0 && item.valor !== '') {
+      if (item.modo === 'monto') {
+        const pct = ((val / sobranteMensual) * 100).toFixed(1);
+        textoConversion = `💡 Equivale al ${pct}% de tu sobrante`;
+      } else {
+        const montoEquiv = (sobranteMensual * (val / 100)).toFixed(2);
+        textoConversion = `💡 Equivale a ${$(montoEquiv)} al mes`;
+      }
+    }
+
+    // Alertas interactivas exclusivas para el campo de Deudas en Plan Avanzado
+    if (llave === 'deudas' && tipoPlan === 'avanzado' && deudas.length > 0 && item.valor !== '') {
+      const pctActual = item.modo === 'porcentaje' 
+        ? val 
+        : ((val / sobranteMensual) * 100);
+
+      if (pctActual < pctMinimoDeudas) {
+        mensajeAlertaDeuda = (
+          <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#d32f2f", fontWeight: "bold" }}>
+            ⚠️ Si bajas este porcentaje por debajo del {pctMinimoDeudas}%, no cubrirás ni los intereses mínimos y tu deuda seguirá creciendo.
+          </div>
+        );
+      } else if (pctActual > pctMinimoDeudas) {
+        mensajeAlertaDeuda = (
+          <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#2e7d32", fontWeight: "bold" }}>
+            🚀 ¡Excelente! Al destinar más del mínimo ({pctMinimoDeudas}%), reducirás el capital más rápido y terminarás de pagar tu deuda mucho antes.
+          </div>
+        );
+      } else {
+        mensajeAlertaDeuda = (
+          <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#0288d1", fontWeight: "bold" }}>
+            ✅ Con este porcentaje mínimo ({pctMinimoDeudas}%) podrás cubrir tus deudas de forma constante sin sufrir por la acumulación de intereses.
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div style={{
+        backgroundColor: "#f4f8f8",
+        padding: "14px",
+        borderRadius: "8px",
+        border: "1px solid #d0e2e0"
+      }}>
+        <label style={{ ...labelStyle, fontSize: "0.88rem", marginBottom: "8px" }}>
+          {titulo}
+        </label>
+        
+        <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+          <select
+            value={item.modo}
+            onChange={(e) => handleDistribucionChange(llave, 'modo', e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+              fontWeight: "bold",
+              backgroundColor: "#fff",
+              color: "#106057",
+              cursor: "pointer"
+            }}
+          >
+            <option value="porcentaje">% (Porcentaje)</option>
+            <option value="monto">$ (Monto)</option>
+          </select>
+
+          <input
+            type="number"
+            value={item.valor}
+            onChange={(e) => handleDistribucionChange(llave, 'valor', e.target.value)}
+            style={{ ...inputStyle, flex: 1 }}
+            placeholder={item.modo === 'monto' ? "$0.00" : "0%"}
+            min="0"
+          />
+        </div>
+
+        <div style={{ fontSize: "0.78rem", color: "#2c7a70", fontWeight: "600", minHeight: "18px" }}>
+          {textoConversion}
+        </div>
+
+        {mensajeAlertaDeuda}
+      </div>
+    );
+  };
+
   const handleGenerarAsesoria = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setResultado(null);
 
-    // 1. Paso A: Clasificación Flash con llama3.2:3b
-    setEtapaActual('1/2 Clasificando viabilidad de la meta (llama3.2:3b)...');
-    const clasificacion = await clasificarViabilidadMeta(
-      datosFinancieros, meta, tipoPlan === 'avanzado' ? deudas : []
-    );
-    if (clasificacion.error) {
-      setResultado(clasificacion);
-      setLoading(false);
-      setEtapaActual('');
+    if (Number(meta.costo) < 0 || Number(meta.plazoDias) <= 0) {
+      setResultado({ error: "El costo no puede ser negativo y el plazo debe ser mayor que cero." });
       return;
     }
 
-    // 2. Paso B: Asesoría con llama3.1:8b según el plan seleccionado
-    if (tipoPlan === 'estandar') {
-      setEtapaActual('2/2 Diseñando Plan Estándar y estructura de gráficas (llama3.1:8b)...');
-      const planEstandar = await generarPlanEstandar(datosFinancieros, meta, clasificacion);
-      
-      setResultado({
-        plan: "Estándar",
-        clasificacionFlash: clasificacion,
-        asesoria: planEstandar
-      });
-    } else {
-      setEtapaActual('2/2 Ejecutando análisis financiero profundo CoT (llama3.1:8b)...');
-      const planAvanzado = await generarPlanAvanzadoCoT(datosFinancieros, deudas, meta, clasificacion);
+    setLoading(true);
+    setResultado(null);
 
+    const datosFinancierosConDistribucion = {
+      ...datosFinancieros,
+      distribucionPersonalizada: {
+        meta: distribucionSobrante.meta.modo === 'monto'
+          ? Number(distribucionSobrante.meta.valor) || 0
+          : (sobranteMensual * (Number(distribucionSobrante.meta.valor) || 0)) / 100,
+        emergencia: distribucionSobrante.emergencia.modo === 'monto'
+          ? Number(distribucionSobrante.emergencia.valor) || 0
+          : (sobranteMensual * (Number(distribucionSobrante.emergencia.valor) || 0)) / 100,
+        deudas: distribucionSobrante.deudas.modo === 'monto'
+          ? Number(distribucionSobrante.deudas.valor) || 0
+          : (sobranteMensual * (Number(distribucionSobrante.deudas.valor) || 0)) / 100
+      }
+    };
+
+    try {
+      setEtapaActual('1/2 Calculando la viabilidad de la meta...');
+      const clasificacion = await clasificarViabilidadMeta(
+        datosFinancierosConDistribucion, meta, tipoPlan === 'avanzado' ? deudas : []
+      );
+      if (clasificacion?.error) {
+        setResultado(clasificacion);
+        return;
+      }
+
+      if (tipoPlan === 'estandar') {
+        setEtapaActual('2/2 Generando el plan estándar con IA...');
+        const planEstandar = await generarPlanEstandar(datosFinancierosConDistribucion, meta, clasificacion);
+        if (planEstandar?.error) {
+          setResultado(planEstandar);
+          return;
+        }
+        setResultado({
+          plan: "Estándar",
+          clasificacionFlash: clasificacion,
+          asesoria: planEstandar
+        });
+      } else {
+        setEtapaActual('2/2 Generando el análisis avanzado con IA...');
+        const planAvanzado = await generarPlanAvanzadoCoT(datosFinancierosConDistribucion, deudas, meta, clasificacion);
+        if (planAvanzado?.error) {
+          setResultado(planAvanzado);
+          return;
+        }
+        setResultado({
+          plan: "Avanzado",
+          clasificacionFlash: clasificacion,
+          asesoria: planAvanzado
+        });
+      }
+    } catch (error) {
+      console.error("Error generando asesoría Plaris:", error);
       setResultado({
-        plan: "Avanzado (Chain of Thought)",
-        clasificacionFlash: clasificacion,
-        asesoria: planAvanzado
+        error: "Ocurrió un error al generar la asesoría. Revisa que Ollama esté activo y que los modelos necesarios estén instalados."
       });
+    } finally {
+      setLoading(false);
+      setEtapaActual('');
     }
-
-    setLoading(false);
-    setEtapaActual('');
   };
 
   return (
@@ -121,7 +300,7 @@ const handleDatosFinancierosChange = (e) => {
     }}>
       <div style={{ maxWidth: "850px", margin: "0 auto" }}>
         
-        {/* Encabezado Principal */}
+        {/* Encabezado */}
         <header style={{ borderBottom: "3px solid #34b8a9", paddingBottom: "15px", marginBottom: "30px" }}>
           <h1 style={{ color: "#106057", fontSize: "2.4rem", margin: 0, fontWeight: "bold" }}>📊 Plaris</h1>
           <p style={{ color: "#34b8a9", marginTop: "5px", fontSize: "1.1rem" }}>
@@ -129,7 +308,7 @@ const handleDatosFinancierosChange = (e) => {
           </p>
         </header>
 
-        {/* PASO 1: Selección del Tipo de Plan */}
+        {/* 1. Selección de Plan */}
         <section style={{
           backgroundColor: "#ffffff",
           padding: "25px",
@@ -154,13 +333,12 @@ const handleDatosFinancierosChange = (e) => {
                 color: "#106057",
                 cursor: "pointer",
                 fontWeight: "bold",
-                textAlign: "left",
-                transition: "all 0.2s"
+                textAlign: "left"
               }}
             >
               <div style={{ fontSize: "1.1rem" }}>📊 Plan Estándar</div>
               <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "5px", fontWeight: "normal" }}>
-                Clasificación rápida de viabilidad + plan de ahorro por semanas estructurado para gráficas.
+                Clasificación rápida de viabilidad + plan de ahorro por semanas estructurado.
               </div>
             </button>
 
@@ -176,19 +354,18 @@ const handleDatosFinancierosChange = (e) => {
                 color: "#106057",
                 cursor: "pointer",
                 fontWeight: "bold",
-                textAlign: "left",
-                transition: "all 0.2s"
+                textAlign: "left"
               }}
             >
               <div style={{ fontSize: "1.1rem" }}>🧠 Plan Avanzado (CoT)</div>
               <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "5px", fontWeight: "normal" }}>
-                Análisis financiero profundo paso a paso, estrategia de liquidación de deudas y mitigación de riesgos.
+                Análisis financiero profundo paso a paso, liquidación de deudas y mitigación de riesgos.
               </div>
             </button>
           </div>
         </section>
 
-        {/* PASO 2: Formulario de Datos */}
+        {/* 2. Formulario de Datos */}
         <form onSubmit={handleGenerarAsesoria}>
           <section style={{
             backgroundColor: "#ffffff",
@@ -249,21 +426,23 @@ const handleDatosFinancierosChange = (e) => {
                   required
                 />
               </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={labelStyle}>De ese ahorro, ¿cuánto es para la meta? ($) — opcional:</label>
-                <input
-                  type="number"
-                  name="ahorroParaMeta"
-                  value={datosFinancieros.ahorroParaMeta ?? ''}
-                  onChange={handleDatosFinancierosChange}
-                  style={inputStyle}
-                  placeholder="Vacío = se llena primero el fondo de emergencia"
-                />
+            </div>
+
+            {/* Distribución en 3 campos alineados */}
+            <div style={{ marginTop: "22px", borderTop: "1px dashed #c0dedb", paddingTop: "18px" }}>
+              <label style={{ ...labelStyle, fontSize: "0.98rem", color: "#106057", marginBottom: "12px" }}>
+                De ese ahorro/sobrante, ¿cómo está distribuido mensualmente? ($ o %) — opcional:
+              </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                {renderCampoDistribucion('meta', '🎯 Meta / Objetivo')}
+                {renderCampoDistribucion('emergencia', '🛡️ Fondo de Emergencia')}
+                {renderCampoDistribucion('deudas', '💳 Deudas')}
               </div>
             </div>
           </section>
 
-          {/* Sección de Meta / Problemática */}
+          {/* 3. Meta */}
           <section style={{
             backgroundColor: "#ffffff",
             padding: "25px",
@@ -284,7 +463,6 @@ const handleDatosFinancierosChange = (e) => {
                   value={meta.nombre}
                   onChange={handleMetaChange}
                   style={inputStyle}
-                  placeholder="Ej. Fondo de Emergencia, Comprar Auto, Liquidar Tarjeta"
                   required
                 />
               </div>
@@ -322,14 +500,13 @@ const handleDatosFinancierosChange = (e) => {
                   value={meta.descripcionProblematica}
                   onChange={handleMetaChange}
                   style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
-                  placeholder="Describe los detalles de tu meta o las dificultades financieras que enfrentas..."
                   required
                 />
               </div>
             </div>
           </section>
 
-          {/* Sección de Deudas (Solo en Plan Avanzado) */}
+          {/* 4. Deudas (Solo Avanzado) */}
           {tipoPlan === 'avanzado' && (
             <section style={{
               backgroundColor: "#ffffff",
@@ -410,7 +587,6 @@ const handleDatosFinancierosChange = (e) => {
             </section>
           )}
 
-          {/* Botón de Envío */}
           <button
             type="submit"
             disabled={loading}
@@ -434,7 +610,6 @@ const handleDatosFinancierosChange = (e) => {
           </button>
         </form>
 
-        {/* Banner de Estado de Carga */}
         {loading && (
           <div style={{
             backgroundColor: "#e6f4f2",
@@ -450,16 +625,12 @@ const handleDatosFinancierosChange = (e) => {
           </div>
         )}
 
-        {/* Visor de Resultados en Formato JSON */}
-        {/* Resultados */}
-          {resultado && <ResultadoAsesoria resultado={resultado} />}
-
+        {resultado && <ResultadoAsesoria resultado={resultado} />}
       </div>
     </div>
   );
 }
 
-// Estilos auxiliares reutilizables
 const labelStyle = {
   display: "block",
   fontSize: "0.9rem",
