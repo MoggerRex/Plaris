@@ -14,18 +14,24 @@ function App() {
   const [datosFinancieros, setDatosFinancieros] = useState({
     ingresosMensuales: 30000,
     gastosFijos: 19000,
-    gastosVariables: 7000,
-    ahorroActual: 4000
+    gastosVariables: 7000
   });
 
-  // Distribución del sobrante (Meta, Emergencia, Deudas)
+  // Cálculo automático del ahorro/sobrante mensual
+  const sobranteMensual = Math.max(
+    0, 
+    (Number(datosFinancieros.ingresosMensuales) || 0) - 
+    (Number(datosFinancieros.gastosFijos) || 0) - 
+    (Number(datosFinancieros.gastosVariables) || 0)
+  );
+
+  // Distribución base por defecto: 70% Meta / 30% Emergencia / 0% Deudas
   const [distribucionSobrante, setDistribucionSobrante] = useState({
-    meta: { valor: '', modo: 'porcentaje' },
-    emergencia: { valor: '', modo: 'porcentaje' },
-    deudas: { valor: '', modo: 'porcentaje' }
+    meta: { valor: 70, modo: 'porcentaje' },
+    emergencia: { valor: 30, modo: 'porcentaje' },
+    deudas: { valor: 0, modo: 'porcentaje' }
   });
 
-  // Flag para rastrear si el usuario editó manualmente el campo de deudas
   const [deudasEditadoManualmente, setDeudasEditadoManualmente] = useState(false);
 
   // Meta u Objetivo
@@ -46,38 +52,50 @@ function App() {
   const [etapaActual, setEtapaActual] = useState('');
   const [resultado, setResultado] = useState(null);
 
-  // Sobrante mensual dinámico
-  const sobranteMensual = Math.max(
-    0, 
-    (datosFinancieros.ingresosMensuales || 0) - (datosFinancieros.gastosFijos || 0) - (datosFinancieros.gastosVariables || 0)
-  );
+  // 1. Cálculo del % equivalente de cada campo para verificar que la suma no supere el 100%
+  const obtenerPorcentajeEquivalente = (item) => {
+    if (item.valor === '' || sobranteMensual <= 0) return 0;
+    const val = Number(item.valor) || 0;
+    if (item.modo === 'porcentaje') return val;
+    return (val / sobranteMensual) * 100;
+  };
 
-  // 1. Cálculo dinámico del interés mensual total y del % mínimo necesario del sobrante
+  const pctMeta = obtenerPorcentajeEquivalente(distribucionSobrante.meta);
+  const pctEmergencia = obtenerPorcentajeEquivalente(distribucionSobrante.emergencia);
+  const pctDeudas = obtenerPorcentajeEquivalente(distribucionSobrante.deudas);
+
+  const sumaPorcentajesTotal = Math.round((pctMeta + pctEmergencia + pctDeudas) * 10) / 10;
+  const distribucionInvalida = sumaPorcentajesTotal > 100;
+
+  // 2. Cálculo dinámico del interés mensual total de las deudas y su % mínimo necesario
   const interesMensualTotal = deudas.reduce((acc, d) => {
     const m = Number(d.monto) || 0;
     const t = parsearTasa(d.interesAnual);
     return acc + (m * (t / 100)) / 12;
   }, 0);
 
-  // Porcentaje mínimo recomendado para no generar intereses (si las tasas son 0%, asigna un piso estándar según deudas)
   let pctMinimoDeudas = 0;
   if (sobranteMensual > 0 && deudas.length > 0) {
     if (interesMensualTotal > 0) {
       pctMinimoDeudas = Math.min(100, Math.ceil((interesMensualTotal / sobranteMensual) * 100));
     } else {
-      // Si el interés es 0%, se sugiere aportar al menos 10% del sobrante para abonar a capital
       const totalDeuda = deudas.reduce((acc, d) => acc + (Number(d.monto) || 0), 0);
       pctMinimoDeudas = totalDeuda > 0 ? 10 : 0;
     }
   }
 
-  // 2. Auto-rellenar el % de deudas cuando cambien deudas o sobrante (si el usuario no lo ha editado libremente)
+  // 3. Auto-ajustar la distribución en Plan Avanzado para acomodar deudas manteniendo la proporción 70/30 en el sobrante
   useEffect(() => {
     if (tipoPlan === 'avanzado' && deudas.length > 0 && !deudasEditadoManualmente) {
-      setDistribucionSobrante(prev => ({
-        ...prev,
+      const restanteParaAhorro = Math.max(0, 100 - pctMinimoDeudas);
+      const nuevoMeta = Math.round(restanteParaAhorro * 0.7);
+      const nuevoEmergencia = Math.round(restanteParaAhorro * 0.3);
+
+      setDistribucionSobrante({
+        meta: { valor: nuevoMeta, modo: 'porcentaje' },
+        emergencia: { valor: nuevoEmergencia, modo: 'porcentaje' },
         deudas: { valor: pctMinimoDeudas, modo: 'porcentaje' }
-      }));
+      });
     }
   }, [deudas, sobranteMensual, tipoPlan, pctMinimoDeudas, deudasEditadoManualmente]);
 
@@ -125,7 +143,6 @@ function App() {
     setDeudas(deudas.filter((_, i) => i !== index));
   };
 
-  // Función auxiliar para renderizar cada campo de distribución
   const renderCampoDistribucion = (llave, titulo) => {
     const item = distribucionSobrante[llave];
     const val = Number(item.valor) || 0;
@@ -143,28 +160,25 @@ function App() {
       }
     }
 
-    // Alertas interactivas exclusivas para el campo de Deudas en Plan Avanzado
     if (llave === 'deudas' && tipoPlan === 'avanzado' && deudas.length > 0 && item.valor !== '') {
-      const pctActual = item.modo === 'porcentaje' 
-        ? val 
-        : ((val / sobranteMensual) * 100);
+      const pctActual = item.modo === 'porcentaje' ? val : ((val / sobranteMensual) * 100);
 
       if (pctActual < pctMinimoDeudas) {
         mensajeAlertaDeuda = (
           <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#d32f2f", fontWeight: "bold" }}>
-            ⚠️ Si bajas este porcentaje por debajo del {pctMinimoDeudas}%, no cubrirás ni los intereses mínimos y tu deuda seguirá creciendo.
+            ⚠️ Si bajas este porcentaje por debajo del {pctMinimoDeudas}%, no cubrirás los intereses mínimos.
           </div>
         );
       } else if (pctActual > pctMinimoDeudas) {
         mensajeAlertaDeuda = (
           <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#2e7d32", fontWeight: "bold" }}>
-            🚀 ¡Excelente! Al destinar más del mínimo ({pctMinimoDeudas}%), reducirás el capital más rápido y terminarás de pagar tu deuda mucho antes.
+            🚀 ¡Excelente! Al destinar más del mínimo ({pctMinimoDeudas}%), terminarás de pagar tu deuda mucho antes.
           </div>
         );
       } else {
         mensajeAlertaDeuda = (
           <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#0288d1", fontWeight: "bold" }}>
-            ✅ Con este porcentaje mínimo ({pctMinimoDeudas}%) podrás cubrir tus deudas de forma constante sin sufrir por la acumulación de intereses.
+            ✅ Con este porcentaje mínimo ({pctMinimoDeudas}%) cubrirás tus deudas sin sufrir por intereses.
           </div>
         );
       }
@@ -175,7 +189,7 @@ function App() {
         backgroundColor: "#f4f8f8",
         padding: "14px",
         borderRadius: "8px",
-        border: "1px solid #d0e2e0"
+        border: distribucionInvalida ? "1px solid #e74c3c" : "1px solid #d0e2e0"
       }}>
         <label style={{ ...labelStyle, fontSize: "0.88rem", marginBottom: "8px" }}>
           {titulo}
@@ -221,6 +235,11 @@ function App() {
   const handleGenerarAsesoria = async (e) => {
     e.preventDefault();
 
+    if (distribucionInvalida) {
+      alert(`⚠️ Distribución inválida: La suma de tus porcentajes suma ${sumaPorcentajesTotal}%, lo cual excede el 100% de tu sobrante disponible. Por favor ajusta los valores para que no superen el 100% antes de continuar.`);
+      return;
+    }
+
     if (Number(meta.costo) < 0 || Number(meta.plazoDias) <= 0) {
       setResultado({ error: "El costo no puede ser negativo y el plazo debe ser mayor que cero." });
       return;
@@ -231,6 +250,7 @@ function App() {
 
     const datosFinancierosConDistribucion = {
       ...datosFinancieros,
+      ahorroActual: sobranteMensual,
       distribucionPersonalizada: {
         meta: distribucionSobrante.meta.modo === 'monto'
           ? Number(distribucionSobrante.meta.valor) || 0
@@ -419,26 +439,54 @@ function App() {
                 <label style={labelStyle}>Ahorro/Sobrante Actual Disponible Mensual ($):</label>
                 <input
                   type="number"
-                  name="ahorroActual"
-                  value={datosFinancieros.ahorroActual}
-                  onChange={handleDatosFinancierosChange}
-                  style={inputStyle}
-                  required
+                  value={sobranteMensual}
+                  readOnly
+                  style={{
+                    ...inputStyle,
+                    backgroundColor: "#eef6f5",
+                    fontWeight: "bold",
+                    color: "#106057",
+                    cursor: "not-allowed"
+                  }}
                 />
               </div>
             </div>
 
             {/* Distribución en 3 campos alineados */}
             <div style={{ marginTop: "22px", borderTop: "1px dashed #c0dedb", paddingTop: "18px" }}>
-              <label style={{ ...labelStyle, fontSize: "0.98rem", color: "#106057", marginBottom: "12px" }}>
-                De ese ahorro/sobrante, ¿cómo está distribuido mensualmente? ($ o %) — opcional:
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <label style={{ ...labelStyle, fontSize: "0.98rem", color: "#106057", margin: 0 }}>
+                  De ese ahorro/sobrante, ¿cómo está distribuido mensualmente? ($ o %) — opcional:
+                </label>
+                <span style={{ 
+                  fontSize: "0.88rem", 
+                  fontWeight: "bold",
+                  color: distribucionInvalida ? "#d32f2f" : "#106057"
+                }}>
+                  Total distribuido: {sumaPorcentajesTotal}%
+                </span>
+              </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 {renderCampoDistribucion('meta', '🎯 Meta / Objetivo')}
                 {renderCampoDistribucion('emergencia', '🛡️ Fondo de Emergencia')}
                 {renderCampoDistribucion('deudas', '💳 Deudas')}
               </div>
+
+              {distribucionInvalida && (
+                <div style={{
+                  marginTop: "12px",
+                  padding: "10px 14px",
+                  backgroundColor: "#fde8e8",
+                  borderLeft: "4px solid #e74c3c",
+                  color: "#c0392b",
+                  fontSize: "0.85rem",
+                  fontWeight: "bold",
+                  borderRadius: "4px"
+                }}>
+                  ⚠️ La suma de la distribución ({sumaPorcentajesTotal}%) excede el 100% de tu sobrante mensual. Ajusta las proporciones antes de continuar.
+                </div>
+              )}
             </div>
           </section>
 
@@ -589,17 +637,17 @@ function App() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || distribucionInvalida}
             style={{
               width: "100%",
-              backgroundColor: tipoPlan === 'estandar' ? "#34b8a9" : "#106057",
+              backgroundColor: distribucionInvalida ? "#95a5a6" : (tipoPlan === 'estandar' ? "#34b8a9" : "#106057"),
               color: "#ffffff",
               border: "none",
               padding: "16px",
               borderRadius: "10px",
               fontSize: "1.1rem",
               fontWeight: "bold",
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: (loading || distribucionInvalida) ? "not-allowed" : "pointer",
               boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
               opacity: loading ? 0.7 : 1,
               transition: "all 0.2s",

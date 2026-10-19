@@ -3,7 +3,6 @@
  */
 
 const SEMANAS_POR_MES = 4.33;
-const PCT_EMERGENCIA_DEFAULT = 0.3;
 const redondearCentavos = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 export function formatearMoneda(n) {
@@ -67,14 +66,16 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
   const deudaInicial = suma(saldos, (d) => d.saldo);
   const tasaMax = saldos[0]?.tasa ?? 0;
 
-  // Determinar porcentajes de reparto
+  // Porcentajes de reparto leídos directamente desde los campos
   let pctDeuda = saldos.length === 0 ? 0 : tasaMax >= 24 ? 0.5 : tasaMax >= 12 ? 0.35 : 0.2;
-  let pctEmergenciaCustom = PCT_EMERGENCIA_DEFAULT;
+  let pctEmergenciaCustom = 0.3; // Default 30%
+  let pctMetaCustom = 0.7; // Default 70%
 
   if (datos.distribucionPersonalizada && flujoLibreMensual > 0) {
     const dist = datos.distribucionPersonalizada;
-    if (dist.deudas > 0) pctDeuda = Math.min(1, dist.deudas / flujoLibreMensual);
-    if (dist.emergencia > 0) pctEmergenciaCustom = Math.min(1, dist.emergencia / flujoLibreMensual);
+    if (dist.deudas >= 0) pctDeuda = Math.min(1, dist.deudas / flujoLibreMensual);
+    if (dist.emergencia >= 0) pctEmergenciaCustom = Math.min(1, dist.emergencia / flujoLibreMensual);
+    if (dist.meta >= 0) pctMetaCustom = Math.min(1, dist.meta / flujoLibreMensual);
   }
 
   const interesMensualEstimado = redondearCentavos(suma(saldos, (d) => (d.saldo * d.tasa) / 100 / 12));
@@ -95,19 +96,14 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
     const deudaTotal = suma(saldos, (d) => d.saldo);
 
     const aporteDeuda = redondearCentavos(Math.min(flujoSemanal * pctDeuda, deudaTotal));
-    let pago = aporteDeuda;
-    for (const d of saldos) {
-      const p = redondearCentavos(Math.min(pago, d.saldo));
-      d.saldo = redondearCentavos(d.saldo - p);
-      pago = redondearCentavos(pago - p);
-    }
+    const restanteAhorro = redondearCentavos(flujoSemanal - aporteDeuda);
 
-    const restante = redondearCentavos(flujoSemanal - aporteDeuda);
+    // Reparto según la proporción introducida en pantalla
     const aporteE = fondoE < objetivoEmergencia
-      ? redondearCentavos(Math.min(restante * pctEmergenciaCustom, objetivoEmergencia - fondoE))
+      ? redondearCentavos(Math.min(flujoSemanal * pctEmergenciaCustom, objetivoEmergencia - fondoE))
       : 0;
 
-    const aporteM = redondearCentavos(Math.min(restante - aporteE, costo - fondoM));
+    const aporteM = redondearCentavos(Math.min(restanteAhorro - aporteE, costo - fondoM));
 
     fondoE = redondearCentavos(fondoE + aporteE);
     fondoM = redondearCentavos(fondoM + aporteM);
