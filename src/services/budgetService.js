@@ -107,6 +107,8 @@ export function createInitialBudgetState() {
     template: null,
     monthlyBudgets: {},
     transactions: [],
+    deudas_activas: [],
+    metas_financieras: [],
   };
 }
 

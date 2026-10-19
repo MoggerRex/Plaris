@@ -4,6 +4,8 @@ import { Check, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import BudgetRowsEditor from '../components/BudgetRowsEditor';
 import SummaryCard from '../components/SummaryCard';
 import { useBudget } from '../context/useBudget';
+import { prepararContextoFinanciero } from '../utils/selectores';
+import { generarPlanAvanzadoCoT } from '../services/ollamaService';
 import {
   amountToCents,
   centsToInput,
@@ -23,11 +25,29 @@ export default function Dashboard() {
   const {
     monthlyBudgets, template, transactions, ensureMonth, updateBudget, saveAsTemplate,
     addTransaction, updateTransaction, deleteTransaction, storageError,
+    deudas_activas, metas_financieras,
   } = useBudget();
   const [month, setMonth] = useState(currentMonthKey);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [newTransactionType, setNewTransactionType] = useState('expense');
   const [message, setMessage] = useState('');
+  const [advisorLoading, setAdvisorLoading] = useState(false);
+  const [advisorResult, setAdvisorResult] = useState(null);
+
+  async function consultarAsesor() {
+    setAdvisorLoading(true);
+    setAdvisorResult(null);
+    try {
+      const contexto = prepararContextoFinanciero({ monthlyBudgets, transactions }, month);
+      const meta = metas_financieras[0] || { nombre: 'Ajuste de presupuesto', costo: 0, plazoDias: 30 };
+      const resultado = await generarPlanAvanzadoCoT(contexto, deudas_activas, meta);
+      setAdvisorResult({ periodo: month, resultado });
+    } catch {
+      setAdvisorResult({ periodo: month, resultado: { error: 'No se pudo consultar al asesor. Intenta nuevamente.' } });
+    } finally {
+      setAdvisorLoading(false);
+    }
+  }
 
   useEffect(() => ensureMonth(month), [month, ensureMonth]);
 
@@ -164,6 +184,22 @@ export default function Dashboard() {
         message={message}
       />
       <YearlyChart data={chartData} />
+      <section className="panel">
+        <div className="section-heading">
+          <div><h2>Asesor financiero</h2><p>Consulta el presupuesto y los movimientos del mes seleccionado con Ollama local.</p></div>
+          <button type="button" className="button button-primary" onClick={consultarAsesor} disabled={advisorLoading}>
+            {advisorLoading ? 'Analizando…' : 'Consultar a Ollama'}
+          </button>
+        </div>
+        {advisorResult && (
+          <div role="status">
+            <p>Análisis de {advisorResult.periodo}</p>
+            {advisorResult.resultado.error
+              ? <p className="form-error" role="alert">{advisorResult.resultado.error}</p>
+              : <pre>{JSON.stringify(advisorResult.resultado, null, 2)}</pre>}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

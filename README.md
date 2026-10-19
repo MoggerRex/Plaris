@@ -18,6 +18,16 @@ La aplicación abre directamente el onboarding de presupuesto base cero, sin reg
 
 Para iniciar localmente: `npm install` y `npm run dev`. La aplicación no requiere backend.
 
+## Asesor financiero local
+
+El dashboard permite consultar a Ollama con el presupuesto y los movimientos del mes seleccionado. Requiere Ollama ejecutándose en `http://localhost:11434` y el modelo `llama3.1:8b` instalado (`ollama pull llama3.1:8b`). El navegador debe tener permitido el acceso a Ollama desde el origen de Vite.
+
+`src/utils/selectores.js` genera el contexto del asesor con ingresos, gastos, ahorros y detalles de los movimientos en pesos MXN. El estado y `formatCurrency` siguen trabajando en centavos. `balanceActual` resta gastos a ingresos; `disponibleActual` también descuenta ahorro.
+
+El estado incluye `deudas_activas` y `metas_financieras`, inicialmente vacíos, sin formulario de edición todavía. Si no hay una meta, el asesor recibe una solicitud de ajuste de presupuesto. Los objetivos de ahorro del onboarding siguen siendo partidas mensuales, no metas con costo y plazo.
+
+Validación del selector: `node --test src/utils/selectores.test.js`.
+
 ---
 
 ## 🛠️ Tecnologías y Arquitectura
