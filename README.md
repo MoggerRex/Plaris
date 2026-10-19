@@ -10,8 +10,9 @@ Plaris es una plataforma web inteligente de gestión financiera personal impulsa
 
 | Color | Código Hex | Vista Previa | Descripción |
 | :--- | :--- | :--- | :--- |
-| **Turquesa Negro** | `#106057` | ![#106057](https://via.placeholder.com/15/106057/000000?text=+) `#106057` | Color primario / Fondos oscuros y contrastes |
-| **Turquesa** | `#34b8a9` | ![#34b8a9](https://via.placeholder.com/15/34b8a9/000000?text=+) `#34b8a9` | Color secundario / Acentos e indicadores principales |
+| **Turquesa Negro** | `#106057` | ![#106057](https://via.placeholder.com/15/106057/000000?text=+) `#106057` | Color primario / Titulos / Fondos oscuros y contrastes |
+| **Turquesa** | `#34b8a9` | ![#34b8a9](https://via.placeholder.com/15/34b8a9/000000?text=+) `#34b8a9` | Color secundario / Subtitulos/ Acentos e indicadores principales |
+| **Turquesa pastel apagado** | `#abe0da` | ![#abe0da](https://via.placeholder.com/15/abe0da/000000?text=+) `#abe0da` | Color para cajas de formularios |
 | **Gris Claro** | `#fafafa` | ![#fafafa](https://via.placeholder.com/15/fafafa/000000?text=+) `#fafafa` | Fondo general de interfaz y tarjetas |
 | **Amarillo** | `#ffd53f` | ![#ffd53f](https://via.placeholder.com/15/ffd53f/000000?text=+) `#ffd53f` | Destacados, alertas y llamadas a la acción (CTA) |
 
