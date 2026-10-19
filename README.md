@@ -10,6 +10,7 @@ Plaris es una plataforma web inteligente de gestión financiera personal impulsa
 
 | Color | Código Hex | Vista Previa | Descripción |
 | :--- | :--- | :--- | :--- |
+| **Cian Negro** | `#183937` | ![#183937](https://via.placeholder.com/15/183937/000000?text=+) `#183937` | Color primario de titulos y botones en header |
 | **Turquesa Negro** | `#106057` | ![#106057](https://via.placeholder.com/15/106057/000000?text=+) `#106057` | Color primario / Titulos y Subtitulos / Fondos oscuros y contrastes |
 | **Turquesa** | `#34b8a9` | ![#34b8a9](https://via.placeholder.com/15/34b8a9/000000?text=+) `#34b8a9` | Header / Color secundario / Acentos e indicadores principales |
 | **Turquesa pastel apagado** | `#abe0da` | ![#abe0da](https://via.placeholder.com/15/abe0da/000000?text=+) `#abe0da` | Color para cajas de formularios |
