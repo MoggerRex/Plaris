@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { amountToCents } from '../services/budgetService';
 import { transactionTypes } from '../config/transactionTypes';
@@ -10,10 +12,20 @@ export default function Movimientos() {
   const state = useMonthBudget();
   return (
     <main className="page-shell">
+      <Link className="back-link" to={'/graficas?mes=' + state.month}>
+        <ArrowLeft size={18} /> Volver a tablas y gráficas
+      </Link>
       <PageHeading title="Movimientos reales">
         <MonthPicker month={state.month} onChange={state.changeMonth} />
       </PageHeading>
+      <p>
+        Registra lo que ya recibiste, gastaste o ahorraste. Estos movimientos actualizan la serie
+        Real del mes de su fecha, sin cambiar tu presupuesto planeado.
+      </p>
       <MonthlyTransactions key={state.month} state={state} />
+      <Link className="button button-secondary" to={'/graficas?mes=' + state.month}>
+        Ver mis gráficas actualizadas
+      </Link>
     </main>
   );
 }

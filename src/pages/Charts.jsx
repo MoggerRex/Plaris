@@ -30,10 +30,19 @@ export default function Charts() {
           Registrar movimientos
         </Link>
       </div>
-      <p>
-        Ambas vistas usan los mismos datos. Las gráficas comparan presupuesto y movimientos reales;
-        las tablas muestran cada concepto. Las deudas se muestran por saldo y pago mensual.
-      </p>
+      <div className="panel">
+        <h2>¿Qué estás viendo?</h2>
+        <p>
+          <strong>Planeado:</strong> los ingresos, gastos y aportaciones de ahorro que guardaste en
+          tu perfil para este mes. <strong>Real:</strong> los movimientos que registraste con fecha
+          en este mes.
+        </p>
+        <p>
+          La gráfica de barras compara ambos. Las gráficas circulares de ingresos, gastos y ahorros
+          muestran la distribución planeada del perfil; la de deudas muestra el saldo registrado. Si
+          no has registrado movimientos, Real aparece en cero.
+        </p>
+      </div>
       <VisualizationPanel
         mode={mode}
         budget={state.budget}
