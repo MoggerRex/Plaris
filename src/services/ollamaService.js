@@ -1,6 +1,6 @@
 import { calcularMetricasFinancieras, formatearMoneda as $ } from '../utils/calculadoraFinanciera';
 
-const OLLAMA_HOST = "http://localhost:11434";
+const OLLAMA_HOST = 'http://localhost:11434';
 
 /* ============================================================
  * 1. CLIENTE GENÉRICO DE OLLAMA
@@ -9,7 +9,7 @@ const OLLAMA_HOST = "http://localhost:11434";
 export async function consultarOllama(
   model,
   prompt,
-  { system, formato, numPredict = 900, reintentos = 1 } = {}
+  { system, formato, numPredict = 900, reintentos = 1 } = {},
 ) {
   const cuerpo = {
     model,
@@ -17,34 +17,32 @@ export async function consultarOllama(
     system,
     format: formato,
     stream: false,
-    keep_alive: "10m",
+    keep_alive: '10m',
     options: {
       num_predict: numPredict,
       num_ctx: 4096,
       temperature: 0.2,
-      num_thread: 4
-    }
+      num_thread: 4,
+    },
   };
 
   const llamar = (body) =>
     fetch(`${OLLAMA_HOST}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
 
   try {
     for (let intento = 0; intento <= reintentos; intento++) {
       let response = await llamar(cuerpo);
 
-      if (!response.ok && formato && typeof formato === "object") {
-        response = await llamar({ ...cuerpo, format: "json" });
+      if (!response.ok && formato && typeof formato === 'object') {
+        response = await llamar({ ...cuerpo, format: 'json' });
       }
 
       if (!response.ok) {
-        throw new Error(
-          `Error en el servidor de Ollama: ${response.statusText}`
-        );
+        throw new Error(`Error en el servidor de Ollama: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -54,25 +52,21 @@ export async function consultarOllama(
       try {
         return JSON.parse(data.response);
       } catch {
-        console.warn(
-          `JSON inválido (intento ${intento + 1}):`,
-          data.response
-        );
+        console.warn(`JSON inválido (intento ${intento + 1}):`, data.response);
 
         if (intento === reintentos) {
           return {
-            error: "Formato JSON inválido",
-            raw: data.response
+            error: 'Formato JSON inválido',
+            raw: data.response,
           };
         }
       }
     }
   } catch (error) {
-    console.error("Error conectando con Ollama:", error);
+    console.error('Error conectando con Ollama:', error);
 
     return {
-      error:
-        "No se pudo conectar con Ollama. Asegúrate de que esté abierto."
+      error: 'No se pudo conectar con Ollama. Asegúrate de que esté abierto.',
     };
   }
 }
@@ -93,13 +87,15 @@ REGLAS OBLIGATORIAS:
 1. Lee la categoría flash y su mensaje de evaluación antes de redactar.
 2. No cambies, contradigas ni reclasifiques la categoría flash.
 3. No presentes como excelente un plan clasificado como "arriesgado" o "imposible"; tampoco afirmes que es imposible si está clasificado como "excelente" o "viable".
-4. Distingue siempre la frecuencia temporal de los montos: NO confundas o mezcles cifras mensuales con semanales. Si hablas de aportación semanal, usa la cifra calculada semanal (${$(m => m.flujoLibreSemanal)} o aportación semanal); si hablas de flujo mensual, especifica que es al mes.
+4. Distingue siempre la frecuencia temporal de los montos: NO confundas o mezcles cifras mensuales con semanales. Si hablas de aportación semanal, usa la cifra calculada semanal (${$((m) => m.flujoLibreSemanal)} o aportación semanal); si hablas de flujo mensual, especifica que es al mes.
 5. Usa únicamente cifras entregadas por el sistema. No inventes aportaciones, tasas, montos, plazos ni resultados de escenarios no calculados.
 6. Habla en español claro, cercano, respetuoso y práctico. Evita alarmismo y tecnicismos innecesarios.
 7. Responde exclusivamente con el JSON pedido, sin texto adicional.`;
 
 const limpiar = (t) =>
-  String(t ?? "").replace(/["\n\r]+/g, " ").slice(0, 500);
+  String(t ?? '')
+    .replace(/["\n\r]+/g, ' ')
+    .slice(0, 500);
 
 /* ============================================================
  * 3. BLOQUE DE DATOS FINANCIEROS
@@ -111,88 +107,77 @@ function bloqueDatos(datos, meta, m) {
   const L = [];
 
   L.push(
-    `- Meta: "${limpiar(meta.nombre)}" por ${$(meta.costo)}, plazo deseado: ${meta.plazoDias} días.`
+    `- Meta: "${limpiar(meta.nombre)}" por ${$(meta.costo)}, plazo deseado: ${meta.plazoDias} días.`,
+  );
+
+  L.push(`- Situación que describe el usuario: "${limpiar(meta.descripcionProblematica)}"`);
+
+  L.push(
+    `- Ingreso mensual: ${$(datos.ingresosMensuales)}. Gastos fijos: ${$(datos.gastosFijos)}. Gastos variables: ${$(datos.gastosVariables)}.`,
+  );
+
+  L.push(`- Sobrante/Flujo libre MENSUAL: ${$(m.flujoLibreMensual)} al mes.`);
+
+  L.push(
+    `- Sobrante/Flujo libre SEMANAL disponible (convertido a 4.33 semanas/mes): ${$(m.flujoLibreSemanal)} por semana.`,
   );
 
   L.push(
-    `- Situación que describe el usuario: "${limpiar(meta.descripcionProblematica)}"`
+    `- FONDO DE EMERGENCIA: tiene ${$(e.actual)} de ${$(e.objetivo)} recomendados (${e.porcentaje}%). Cubre ${e.mesesCubiertos} de ${e.meses} meses de gastos fijos.`,
   );
 
-  L.push(
-    `- Ingreso mensual: ${$(datos.ingresosMensuales)}. Gastos fijos: ${$(datos.gastosFijos)}. Gastos variables: ${$(datos.gastosVariables)}.`
-  );
-
-  L.push(
-    `- Sobrante/Flujo libre MENSUAL: ${$(m.flujoLibreMensual)} al mes.`
-  );
-
-  L.push(
-    `- Sobrante/Flujo libre SEMANAL disponible (convertido a 4.33 semanas/mes): ${$(m.flujoLibreSemanal)} por semana.`
-  );
-
-  L.push(
-    `- FONDO DE EMERGENCIA: tiene ${$(e.actual)} de ${$(e.objetivo)} recomendados (${e.porcentaje}%). Cubre ${e.mesesCubiertos} de ${e.meses} meses de gastos fijos.`
-  );
-
-  L.push(
-    `- FONDO DE LA META: tiene ${$(f.actual)} de ${$(f.objetivo)} (${f.porcentaje}%).`
-  );
+  L.push(`- FONDO DE LA META: tiene ${$(f.actual)} de ${$(f.objetivo)} (${f.porcentaje}%).`);
 
   if (m.flujoLibreSemanal > 0) {
     L.push(
-      `- Reparto SEMANAL propuesto del flujo libre: ${m.reparto.meta}% a la meta (${$(m.aporteSemanalInicial.meta)}/semana), ${m.reparto.emergencia}% a emergencia (${$(m.aporteSemanalInicial.emergencia)}/semana)${m.reparto.deuda ? `, ${m.reparto.deuda}% a deudas (${$(m.aporteSemanalInicial.deuda)}/semana)` : ""}.`
+      `- Reparto SEMANAL propuesto del flujo libre: ${m.reparto.meta}% a la meta (${$(m.aporteSemanalInicial.meta)}/semana), ${m.reparto.emergencia}% a emergencia (${$(m.aporteSemanalInicial.emergencia)}/semana)${m.reparto.deuda ? `, ${m.reparto.deuda}% a deudas (${$(m.aporteSemanalInicial.deuda)}/semana)` : ''}.`,
     );
   } else {
-    L.push(
-      "- El usuario NO tiene flujo libre: sus gastos igualan o superan sus ingresos."
-    );
+    L.push('- El usuario NO tiene flujo libre: sus gastos igualan o superan sus ingresos.');
   }
 
   if (m.alcanzable) {
     L.push(
-      `- Con ese ritmo la meta se completa en ${m.semanasParaMeta} semanas (${m.diasParaMeta} días). ${m.cumplePlazoSolicitado ? "SÍ" : "NO"} cumple el plazo deseado.`
+      `- Con ese ritmo la meta se completa en ${m.semanasParaMeta} semanas (${m.diasParaMeta} días). ${m.cumplePlazoSolicitado ? 'SÍ' : 'NO'} cumple el plazo deseado.`,
     );
     if (!m.cumplePlazoSolicitado) {
       L.push(
-        `- Aunque no se alcanza en los ${meta.plazoDias} días solicitados, SÍ es alcanzable manteniendo el flujo y reparto actuales: el plazo alternativo calculado es ${m.semanasParaMeta} semanas, ${m.diasParaMeta} días (${(m.diasParaMeta / 365).toLocaleString("es-MX", { maximumFractionDigits: 1 })} años aprox.). Recomienda ajustar la fecha objetivo a este plazo.`
+        `- Aunque no se alcanza en los ${meta.plazoDias} días solicitados, SÍ es alcanzable manteniendo el flujo y reparto actuales: el plazo alternativo calculado es ${m.semanasParaMeta} semanas, ${m.diasParaMeta} días (${(m.diasParaMeta / 365).toLocaleString('es-MX', { maximumFractionDigits: 1 })} años aprox.). Recomienda ajustar la fecha objetivo a este plazo.`,
       );
     }
   } else {
     L.push(
       m.sinProgreso
-        ? "- Con el flujo y reparto actuales no existe avance neto hacia la meta; no hay un plazo alternativo calculable mientras estas condiciones no cambien."
-        : "- No hay flujo semanal positivo para aportar a la meta; no hay un plazo alternativo calculable mientras estas condiciones no cambien."
+        ? '- Con el flujo y reparto actuales no existe avance neto hacia la meta; no hay un plazo alternativo calculable mientras estas condiciones no cambien.'
+        : '- No hay flujo semanal positivo para aportar a la meta; no hay un plazo alternativo calculable mientras estas condiciones no cambien.',
     );
   }
 
   if (m.brechaSemanal > 0) {
     L.push(
-      `- Para cumplir el plazo deseado haría falta depositar ${$(m.aporteSemanalNecesario)} por SEMANA a la meta; hoy se proponen ${$(m.aporteSemanalInicial.meta)}/semana (brecha de ${$(m.brechaSemanal)} por semana).`
+      `- Para cumplir el plazo deseado haría falta depositar ${$(m.aporteSemanalNecesario)} por SEMANA a la meta; hoy se proponen ${$(m.aporteSemanalInicial.meta)}/semana (brecha de ${$(m.brechaSemanal)} por semana).`,
     );
   }
 
-  if (m.categoria === "imposible") {
+  if (m.categoria === 'imposible') {
     L.push(
-      `- Aun destinando el 100% del flujo libre semanal (${$(m.flujoLibreSemanal)}/semana), en el plazo deseado solo se juntarían ${$(m.maxPosibleEnPlazo)} de los ${$(meta.costo)} necesarios.`
+      `- Aun destinando el 100% del flujo libre semanal (${$(m.flujoLibreSemanal)}/semana), en el plazo deseado solo se juntarían ${$(m.maxPosibleEnPlazo)} de los ${$(meta.costo)} necesarios.`,
     );
   }
 
-  return L.join("\n");
+  return L.join('\n');
 }
 
 function bloqueDeudas(m) {
   if (!m.deudas) {
-    return "- El usuario no reporta deudas.";
+    return '- El usuario no reporta deudas.';
   }
 
   const d = m.deudas;
 
   const lista = d.detalle
-    .map(
-      (x) =>
-        `${limpiar(x.concepto)}: ${$(x.monto)} al ${x.tasa}% anual`
-    )
-    .join("; ");
+    .map((x) => `${limpiar(x.concepto)}: ${$(x.monto)} al ${x.tasa}% anual`)
+    .join('; ');
 
   return [
     `- Deudas: ${lista}.`,
@@ -200,18 +185,14 @@ function bloqueDeudas(m) {
     d.semanasParaLiquidar === null
       ? `- Al llegar a la meta, todavía quedarían ${$(d.saldoAlFinal)} de deuda.`
       : `- Con el plan, las deudas quedan liquidadas en la semana ${d.semanasParaLiquidar}.`,
-    "- Estrategia aplicada: método avalancha (primero la deuda de mayor interés)."
-  ].join("\n");
+    '- Estrategia aplicada: método avalancha (primero la deuda de mayor interés).',
+  ].join('\n');
 }
 
 function completar(resp, campos) {
   const salida = { ...resp };
   for (const [clave, defecto] of Object.entries(campos)) {
-    if (
-      salida[clave] === undefined ||
-      salida[clave] === null ||
-      salida[clave] === ""
-    ) {
+    if (salida[clave] === undefined || salida[clave] === null || salida[clave] === '') {
       salida[clave] = defecto;
     }
   }
@@ -223,24 +204,17 @@ function completar(resp, campos) {
  * ============================================================ */
 
 const MENSAJES_FALLBACK = {
-  excelente: "Tu meta es muy alcanzable con tu ritmo de ahorro actual.",
-  viable: "Tu meta es alcanzable en el plazo que pides si mantienes tu ritmo de ahorro.",
-  arriesgado: "Podrías lograrlo, pero solo sacrificando tu fondo de emergencia o el pago de deudas.",
-  imposible: "Con tus ingresos y gastos actuales, esta meta no es alcanzable en ese plazo."
+  excelente: 'Tu meta es muy alcanzable con tu ritmo de ahorro actual.',
+  viable: 'Tu meta es alcanzable en el plazo que pides si mantienes tu ritmo de ahorro.',
+  arriesgado:
+    'Podrías lograrlo, pero solo sacrificando tu fondo de emergencia o el pago de deudas.',
+  imposible: 'Con tus ingresos y gastos actuales, esta meta no es alcanzable en ese plazo.',
 };
 
-export async function clasificarViabilidadMeta(
-  datosFinancieros,
-  meta,
-  deudas = []
-) {
-  const m = calcularMetricasFinancieras(
-    datosFinancieros,
-    meta,
-    deudas
-  );
+export async function clasificarViabilidadMeta(datosFinancieros, meta, deudas = []) {
+  const m = calcularMetricasFinancieras(datosFinancieros, meta, deudas);
   const mesesAproximados = (dias) =>
-    (dias / 30).toLocaleString("es-MX", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+    (dias / 30).toLocaleString('es-MX', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
   const detalleEvaluacion = [];
   const plazoDeseado = `${meta.plazoDias} días (${mesesAproximados(meta.plazoDias)} meses aprox.)`;
   let textoPlazo;
@@ -249,53 +223,57 @@ export async function clasificarViabilidadMeta(
     textoPlazo = `Tu plazo propuesto es de ${plazoDeseado}. Ya tienes el monto de la meta, así que puedes alcanzarla ahora.`;
   } else if (m.alcanzable) {
     const plazoReal = `${m.diasParaMeta} días (${mesesAproximados(m.diasParaMeta)} meses aprox.)`;
-    textoPlazo = `Tu plazo propuesto es de ${plazoDeseado}. ${m.cumplePlazoSolicitado ? "Sí es realista" : "No es realista con el reparto actual de tu dinero."} Como referencia para ajustar el plan a uno realista, el plazo calculado con las condiciones actuales es de ${plazoReal}.`;
+    textoPlazo = `Tu plazo propuesto es de ${plazoDeseado}. ${m.cumplePlazoSolicitado ? 'Sí es realista' : 'No es realista con el reparto actual de tu dinero.'} Como referencia para ajustar el plan a uno realista, el plazo calculado con las condiciones actuales es de ${plazoReal}.`;
   } else {
     textoPlazo = m.sinProgreso
       ? `Tu plazo propuesto es de ${plazoDeseado}, pero con el flujo y reparto actuales no hay avance neto hacia la meta; no es posible estimar un plazo alternativo hasta ajustar esas condiciones.`
       : `Tu plazo propuesto es de ${plazoDeseado}, pero no hay flujo semanal positivo para avanzar hacia la meta; no es posible estimar un plazo alternativo hasta ajustar esa situación.`;
   }
-  detalleEvaluacion.push({ titulo: "1. Plazo del plan", texto: textoPlazo });
+  detalleEvaluacion.push({ titulo: '1. Plazo del plan', texto: textoPlazo });
 
   const sobranteMensual = m.flujoLibreMensual;
   const sobraTotalSemanal = m.flujoLibreSemanal;
   const distribucionSemanal = [
     `${$(m.aporteSemanalInicial.meta)} a la meta`,
-    `${$(m.aporteSemanalInicial.emergencia)} al fondo de emergencia`
+    `${$(m.aporteSemanalInicial.emergencia)} al fondo de emergencia`,
   ];
   if (m.aporteSemanalInicial.deuda > 0) {
     distribucionSemanal.push(`${$(m.aporteSemanalInicial.deuda)} a deudas`);
   }
-  const textoCapacidad = m.brechaCapacidadSemanal > 0
-    ? `Para el plazo que propusiste de ${meta.plazoDias} días, necesitas aportar ${$(m.aporteSemanalNecesario)} por semana a la meta. Tu sobrante semanal total es ${$(sobraTotalSemanal)}; aun destinándolo completo a la meta, faltarían ${$(m.brechaCapacidadSemanal)} por semana.`
-    : `Para el plazo que propusiste de ${meta.plazoDias} días, la meta necesitaría recibir ${$(m.aporteSemanalNecesario)} por semana. Tu sobrante semanal total realmente es ${$(sobraTotalSemanal)} y el reparto distribuye tus ${$(m.totalDistribuidoSemanal)} asi: ${distribucionSemanal.join(", ")}. Quedan ${$(m.sobranteNoAsignadoSemanal)} sin asignar.`;
-  const textoAsignacion = m.aporteSemanalInicial.meta < m.aporteSemanalNecesario
-    ? `Actualmente van ${$(m.aporteSemanalInicial.meta)} por semana a la meta; faltan ${$(m.brechaSemanal)} para llegar a la aportación semanal del plazo que propusiste. ${m.brechaAdicionalSemanal > 0 ? `Si mantienes las aportaciones actuales a emergencia y deudas, necesitarías aumentar tu sobrante semanal en ${$(m.brechaAdicionalSemanal)}; si no, habría que redistribuir los porcentajes y hacer un plan nuevo.` : `La diferencia puede cubrirse con el sobrante no asignado, sin reducir las otras aportaciones.`}`
-    : `Actualmente van ${$(m.aporteSemanalInicial.meta)} por semana a la meta, cantidad suficiente para cubrir la aportación requerida.`;
+  const textoCapacidad =
+    m.brechaCapacidadSemanal > 0
+      ? `Para el plazo que propusiste de ${meta.plazoDias} días, necesitas aportar ${$(m.aporteSemanalNecesario)} por semana a la meta. Tu sobrante semanal total es ${$(sobraTotalSemanal)}; aun destinándolo completo a la meta, faltarían ${$(m.brechaCapacidadSemanal)} por semana.`
+      : `Para el plazo que propusiste de ${meta.plazoDias} días, la meta necesitaría recibir ${$(m.aporteSemanalNecesario)} por semana. Tu sobrante semanal total realmente es ${$(sobraTotalSemanal)} y el reparto distribuye tus ${$(m.totalDistribuidoSemanal)} asi: ${distribucionSemanal.join(', ')}. Quedan ${$(m.sobranteNoAsignadoSemanal)} sin asignar.`;
+  const textoAsignacion =
+    m.aporteSemanalInicial.meta < m.aporteSemanalNecesario
+      ? `Actualmente van ${$(m.aporteSemanalInicial.meta)} por semana a la meta; faltan ${$(m.brechaSemanal)} para llegar a la aportación semanal del plazo que propusiste. ${m.brechaAdicionalSemanal > 0 ? `Si mantienes las aportaciones actuales a emergencia y deudas, necesitarías aumentar tu sobrante semanal en ${$(m.brechaAdicionalSemanal)}; si no, habría que redistribuir los porcentajes y hacer un plan nuevo.` : `La diferencia puede cubrirse con el sobrante no asignado, sin reducir las otras aportaciones.`}`
+      : `Actualmente van ${$(m.aporteSemanalInicial.meta)} por semana a la meta, cantidad suficiente para cubrir la aportación requerida.`;
   detalleEvaluacion.push({
-    titulo: "2. De dónde sale tu sobrante semanal",
-    texto: `Tu sobrante mensual viene del siguiente cálculo: ${$(datosFinancieros.ingresosMensuales)} de ingresos menos ${$(datosFinancieros.gastosFijos)} de gastos fijos y ${$(datosFinancieros.gastosVariables)} de gastos variables es igual a: ${$(sobranteMensual)}. Al convertirlo usando 4.33 semanas por mes, quedan ${$(sobraTotalSemanal)} disponibles por semana. ${textoCapacidad} ${textoAsignacion}`
+    titulo: '2. De dónde sale tu sobrante semanal',
+    texto: `Tu sobrante mensual viene del siguiente cálculo: ${$(datosFinancieros.ingresosMensuales)} de ingresos menos ${$(datosFinancieros.gastosFijos)} de gastos fijos y ${$(datosFinancieros.gastosVariables)} de gastos variables es igual a: ${$(sobranteMensual)}. Al convertirlo usando 4.33 semanas por mes, quedan ${$(sobraTotalSemanal)} disponibles por semana. ${textoCapacidad} ${textoAsignacion}`,
   });
 
   const partesReparto = [
     `${m.reparto.meta}% (${$(m.aporteSemanalInicial.meta)}) a la meta`,
-    `${m.reparto.emergencia}% (${$(m.aporteSemanalInicial.emergencia)}) al fondo de emergencia`
+    `${m.reparto.emergencia}% (${$(m.aporteSemanalInicial.emergencia)}) al fondo de emergencia`,
   ];
   if (m.reparto.deuda > 0) {
     partesReparto.push(`${m.reparto.deuda}% (${$(m.aporteSemanalInicial.deuda)}) a deudas`);
   }
-  const resumenReparto = partesReparto.length > 1
-    ? `${partesReparto.slice(0, -1).join(", ")} y ${partesReparto.at(-1)}`
-    : partesReparto[0];
+  const resumenReparto =
+    partesReparto.length > 1
+      ? `${partesReparto.slice(0, -1).join(', ')} y ${partesReparto.at(-1)}`
+      : partesReparto[0];
   const estadoReparto = m.cumplePlazoSolicitado
-    ? "Sí es adecuado para el plazo solicitado: la simulación alcanza la meta dentro de ese periodo."
-    : "Tu plan necesita ajuste para cumplir el plazo solicitado: la simulación no alcanza la meta dentro de ese periodo por lo que se recomendara un nuevo plan.";
-  const estadoEmergencia = m.fondos.emergencia.faltante > 0
-    ? `El fondo de emergencia aún está incompleto (${m.fondos.emergencia.porcentaje}% de su objetivo), por lo que mantener esta aportación ayuda a proteger tu estabilidad.`
-    : "Tu fondo de emergencia ya llegó al objetivo calculado, así que no requiere una aportación semanal adicional por ahora.";
+    ? 'Sí es adecuado para el plazo solicitado: la simulación alcanza la meta dentro de ese periodo.'
+    : 'Tu plan necesita ajuste para cumplir el plazo solicitado: la simulación no alcanza la meta dentro de ese periodo por lo que se recomendara un nuevo plan.';
+  const estadoEmergencia =
+    m.fondos.emergencia.faltante > 0
+      ? `El fondo de emergencia aún está incompleto (${m.fondos.emergencia.porcentaje}% de su objetivo), por lo que mantener esta aportación ayuda a proteger tu estabilidad.`
+      : 'Tu fondo de emergencia ya llegó al objetivo calculado, así que no requiere una aportación semanal adicional por ahora.';
   detalleEvaluacion.push({
-    titulo: "3. ¿El reparto del sobrante es adecuado?",
-    texto: `${estadoReparto} Actualmente distribuyes ${resumenReparto}. ${estadoEmergencia}`
+    titulo: '3. ¿El reparto del sobrante es adecuado?',
+    texto: `${estadoReparto} Actualmente distribuyes ${resumenReparto}. ${estadoEmergencia}`,
   });
 
   return {
@@ -303,7 +281,7 @@ export async function clasificarViabilidadMeta(
     detalleEvaluacion,
     mensajeEvaluacion: detalleEvaluacion
       .map(({ titulo, texto }) => `${titulo}: ${texto}`)
-      .join(" ")
+      .join(' '),
   };
 }
 
@@ -312,39 +290,33 @@ export async function clasificarViabilidadMeta(
  * ============================================================ */
 
 const ESQUEMA_PLAN_ESTANDAR = {
-  type: "object",
+  type: 'object',
   properties: {
-    diagnostico: { type: "string" },
-    analisisFondoEmergencia: { type: "string" },
-    analisisFondoMeta: { type: "string" },
-    planSugerido: { type: "string" },
+    diagnostico: { type: 'string' },
+    analisisFondoEmergencia: { type: 'string' },
+    analisisFondoMeta: { type: 'string' },
+    planSugerido: { type: 'string' },
     puntosClave: {
-      type: "array",
-      items: { type: "string" }
-    }
+      type: 'array',
+      items: { type: 'string' },
+    },
   },
   required: [
-    "diagnostico",
-    "analisisFondoEmergencia",
-    "analisisFondoMeta",
-    "planSugerido",
-    "puntosClave"
-  ]
+    'diagnostico',
+    'analisisFondoEmergencia',
+    'analisisFondoMeta',
+    'planSugerido',
+    'puntosClave',
+  ],
 };
 
-export async function generarPlanEstandar(
-  datosFinancieros,
-  meta,
-  clasificacionPrevia
-) {
+export async function generarPlanEstandar(datosFinancieros, meta, clasificacionPrevia) {
   const m = calcularMetricasFinancieras(datosFinancieros, meta);
 
-  const categoriaFlash =
-    clasificacionPrevia?.categoria ?? m.categoria;
+  const categoriaFlash = clasificacionPrevia?.categoria ?? m.categoria;
 
   const mensajeFlash = limpiar(
-    clasificacionPrevia?.mensajeEvaluacion ||
-      MENSAJES_FALLBACK[categoriaFlash]
+    clasificacionPrevia?.mensajeEvaluacion || MENSAJES_FALLBACK[categoriaFlash],
   );
 
   const prompt = `EVALUACIÓN FLASH OBLIGATORIA:
@@ -373,28 +345,24 @@ Completa los campos del JSON:
 
 No incluyas tablas, Markdown ni texto fuera del JSON.`;
 
-  const resp = await consultarOllama(
-    "llama3.1:8b",
-    prompt,
-    {
-      system: SYSTEM_PLARIS,
-      formato: ESQUEMA_PLAN_ESTANDAR,
-      numPredict: 900
-    }
-  );
+  const resp = await consultarOllama('llama3.1:8b', prompt, {
+    system: SYSTEM_PLARIS,
+    formato: ESQUEMA_PLAN_ESTANDAR,
+    numPredict: 900,
+  });
 
   if (resp.error) return resp;
 
   return {
     ...completar(resp, {
       diagnostico: MENSAJES_FALLBACK[categoriaFlash],
-      analisisFondoEmergencia: "",
-      analisisFondoMeta: "",
-      planSugerido: "",
-      puntosClave: []
+      analisisFondoEmergencia: '',
+      analisisFondoMeta: '',
+      planSugerido: '',
+      puntosClave: [],
     }),
     categoria: categoriaFlash,
-    calculos: m
+    calculos: m,
   };
 }
 
@@ -403,47 +371,36 @@ No incluyas tablas, Markdown ni texto fuera del JSON.`;
  * ============================================================ */
 
 const ESQUEMA_PLAN_AVANZADO = {
-  type: "object",
+  type: 'object',
   properties: {
     razonamiento: {
-      type: "array",
-      items: { type: "string" }
+      type: 'array',
+      items: { type: 'string' },
     },
-    llamadoDeAtencion: { type: "string" },
-    analisisRiesgoAhorroYDeuda: { type: "string" },
+    llamadoDeAtencion: { type: 'string' },
+    analisisRiesgoAhorroYDeuda: { type: 'string' },
     estrategiaRecomendada: {
-      type: "array",
-      items: { type: "string" }
+      type: 'array',
+      items: { type: 'string' },
     },
-    conclusionYVeredicto: { type: "string" }
+    conclusionYVeredicto: { type: 'string' },
   },
   required: [
-    "razonamiento",
-    "llamadoDeAtencion",
-    "analisisRiesgoAhorroYDeuda",
-    "estrategiaRecomendada",
-    "conclusionYVeredicto"
-  ]
+    'razonamiento',
+    'llamadoDeAtencion',
+    'analisisRiesgoAhorroYDeuda',
+    'estrategiaRecomendada',
+    'conclusionYVeredicto',
+  ],
 };
 
-export async function generarPlanAvanzadoCoT(
-  datosFinancieros,
-  deudas,
-  meta,
-  clasificacionPrevia
-) {
-  const m = calcularMetricasFinancieras(
-    datosFinancieros,
-    meta,
-    deudas
-  );
+export async function generarPlanAvanzadoCoT(datosFinancieros, deudas, meta, clasificacionPrevia) {
+  const m = calcularMetricasFinancieras(datosFinancieros, meta, deudas);
 
-  const categoriaFlash =
-    clasificacionPrevia?.categoria ?? m.categoria;
+  const categoriaFlash = clasificacionPrevia?.categoria ?? m.categoria;
 
   const mensajeFlash = limpiar(
-    clasificacionPrevia?.mensajeEvaluacion ||
-      MENSAJES_FALLBACK[categoriaFlash]
+    clasificacionPrevia?.mensajeEvaluacion || MENSAJES_FALLBACK[categoriaFlash],
   );
 
   const prompt = `EVALUACIÓN FLASH OBLIGATORIA:
@@ -471,15 +428,11 @@ Completa los campos del JSON en este orden:
 
 No incluyas tablas, Markdown ni texto fuera del JSON.`;
 
-  const resp = await consultarOllama(
-    "llama3.1:8b",
-    prompt,
-    {
-      system: SYSTEM_PLARIS,
-      formato: ESQUEMA_PLAN_AVANZADO,
-      numPredict: 1400
-    }
-  );
+  const resp = await consultarOllama('llama3.1:8b', prompt, {
+    system: SYSTEM_PLARIS,
+    formato: ESQUEMA_PLAN_AVANZADO,
+    numPredict: 1400,
+  });
 
   if (resp.error) return resp;
 
@@ -487,11 +440,11 @@ No incluyas tablas, Markdown ni texto fuera del JSON.`;
     ...completar(resp, {
       razonamiento: [],
       llamadoDeAtencion: MENSAJES_FALLBACK[categoriaFlash],
-      analisisRiesgoAhorroYDeuda: "",
+      analisisRiesgoAhorroYDeuda: '',
       estrategiaRecomendada: [],
-      conclusionYVeredicto: ""
+      conclusionYVeredicto: '',
     }),
     categoria: categoriaFlash,
-    calculos: m
+    calculos: m,
   };
 }

@@ -6,7 +6,8 @@ export const advicePlans = {
     timeoutMs: 120000,
     tokens: 1200,
     description: 'Resumen del presupuesto y ajustes sencillos de gastos.',
-    instructions: 'Da un diagnóstico breve y práctico. Prioriza hasta tres ajustes opcionales de mayor utilidad y acciones concretas según los datos registrados. Explica la clasificación y el efecto de la reserva con los cálculos proporcionados.',
+    instructions:
+      'Da un diagnóstico breve y práctico. Prioriza hasta tres ajustes opcionales de mayor utilidad y acciones concretas según los datos registrados. Explica la clasificación y el efecto de la reserva con los cálculos proporcionados.',
   },
   avanzado: {
     label: 'Avanzado',
@@ -32,5 +33,3 @@ PRECISIÓN Y TONO:
 Habla de tú, con respeto, sin regaños ni juicios sobre caprichos. Distingue datos, estimaciones y propuestas. No afirmes que puedes predecir imprevistos. Explica brevemente la limitación de interés nominal mensual cuando haya deuda y los promedios de ingreso cuando afecten la conclusión. Devuelve conclusiones y motivos verificables, sin razonamiento interno ni operaciones extensas. Todo debe caber en el JSON solicitado; no agregues claves ni texto fuera del objeto.`,
   },
 };
-
-

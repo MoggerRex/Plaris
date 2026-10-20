@@ -10,12 +10,16 @@ export function formatearMoneda(n) {
     style: 'currency',
     currency: 'MXN',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(Number(n) || 0);
 }
 
 export function parsearTasa(valor) {
-  const n = parseFloat(String(valor ?? '').replace(',', '.').replace(/[^0-9.]/g, ''));
+  const n = parseFloat(
+    String(valor ?? '')
+      .replace(',', '.')
+      .replace(/[^0-9.]/g, ''),
+  );
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -28,7 +32,7 @@ function repartirAhorroActual(datos, objetivoEmergencia) {
     const { meta = 0, emergencia = 0 } = datos.distribucionPersonalizada;
     return {
       emergencia: redondearCentavos(Math.min(emergencia, total)),
-      meta: redondearCentavos(Math.min(meta, total))
+      meta: redondearCentavos(Math.min(meta, total)),
     };
   }
 
@@ -60,7 +64,11 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
 
   const saldos = (deudas || [])
     .filter((d) => Number(d.monto) > 0)
-    .map((d) => ({ concepto: d.concepto, saldo: redondearCentavos(Number(d.monto)), tasa: parsearTasa(d.interesAnual) }))
+    .map((d) => ({
+      concepto: d.concepto,
+      saldo: redondearCentavos(Number(d.monto)),
+      tasa: parsearTasa(d.interesAnual),
+    }))
     .sort((a, b) => b.tasa - a.tasa);
 
   const deudaInicial = suma(saldos, (d) => d.saldo);
@@ -73,10 +81,13 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
   if (datos.distribucionPersonalizada && flujoLibreMensual > 0) {
     const dist = datos.distribucionPersonalizada;
     if (dist.deudas >= 0) pctDeuda = Math.min(1, dist.deudas / flujoLibreMensual);
-    if (dist.emergencia >= 0) pctEmergenciaCustom = Math.min(1, dist.emergencia / flujoLibreMensual);
+    if (dist.emergencia >= 0)
+      pctEmergenciaCustom = Math.min(1, dist.emergencia / flujoLibreMensual);
   }
 
-  const interesMensualEstimado = redondearCentavos(suma(saldos, (d) => (d.saldo * d.tasa) / 100 / 12));
+  const interesMensualEstimado = redondearCentavos(
+    suma(saldos, (d) => (d.saldo * d.tasa) / 100 / 12),
+  );
 
   let fondoE = inicial.emergencia;
   let fondoM = inicial.meta;
@@ -90,16 +101,21 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
     semana++;
 
     const deudaAntesSemana = suma(saldos, (d) => d.saldo);
-    saldos.forEach((d) => { d.saldo = redondearCentavos(d.saldo + (d.saldo * d.tasa) / 100 / 52); });
+    saldos.forEach((d) => {
+      d.saldo = redondearCentavos(d.saldo + (d.saldo * d.tasa) / 100 / 52);
+    });
     const deudaTotal = suma(saldos, (d) => d.saldo);
 
     const aporteDeuda = redondearCentavos(Math.min(flujoSemanal * pctDeuda, deudaTotal));
     const restanteAhorro = redondearCentavos(flujoSemanal - aporteDeuda);
 
     // Reparto según la proporción introducida en pantalla
-    const aporteE = fondoE < objetivoEmergencia
-      ? redondearCentavos(Math.min(flujoSemanal * pctEmergenciaCustom, objetivoEmergencia - fondoE))
-      : 0;
+    const aporteE =
+      fondoE < objetivoEmergencia
+        ? redondearCentavos(
+            Math.min(flujoSemanal * pctEmergenciaCustom, objetivoEmergencia - fondoE),
+          )
+        : 0;
 
     const aporteM = redondearCentavos(Math.min(restanteAhorro - aporteE, costo - fondoM));
 
@@ -119,7 +135,7 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
       fondoEmergencia: fondoE,
       faltanteMeta: redondearCentavos(Math.max(0, costo - fondoM)),
       porcentajeMeta: costo > 0 ? Math.min(100, Math.round((fondoM / costo) * 100)) : 100,
-      deudaRestante
+      deudaRestante,
     });
 
     if (sinProgreso) break;
@@ -130,18 +146,30 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
   const diasParaMeta = alcanzable ? semana * 7 : null;
 
   const plazoSemanas = plazoDias / 7;
-  const aporteSemanalNecesario = redondearCentavos(plazoSemanas > 0 ? faltanteInicial / plazoSemanas : faltanteInicial);
-  const aporteSemanalInicial = filas[0]
-    ? { meta: filas[0].aporteMeta, emergencia: filas[0].aporteEmergencia, deuda: filas[0].aporteDeuda }
-    : { meta: 0, emergencia: 0, deuda: 0 };
-  const brechaSemanal = redondearCentavos(Math.max(0, aporteSemanalNecesario - aporteSemanalInicial.meta));
-  const brechaCapacidadSemanal = redondearCentavos(Math.max(0, aporteSemanalNecesario - flujoSemanal));
-  const totalDistribuidoSemanal = redondearCentavos(
-    aporteSemanalInicial.meta + aporteSemanalInicial.emergencia + aporteSemanalInicial.deuda
+  const aporteSemanalNecesario = redondearCentavos(
+    plazoSemanas > 0 ? faltanteInicial / plazoSemanas : faltanteInicial,
   );
-  const sobranteNoAsignadoSemanal = redondearCentavos(Math.max(0, flujoSemanal - totalDistribuidoSemanal));
+  const aporteSemanalInicial = filas[0]
+    ? {
+        meta: filas[0].aporteMeta,
+        emergencia: filas[0].aporteEmergencia,
+        deuda: filas[0].aporteDeuda,
+      }
+    : { meta: 0, emergencia: 0, deuda: 0 };
+  const brechaSemanal = redondearCentavos(
+    Math.max(0, aporteSemanalNecesario - aporteSemanalInicial.meta),
+  );
+  const brechaCapacidadSemanal = redondearCentavos(
+    Math.max(0, aporteSemanalNecesario - flujoSemanal),
+  );
+  const totalDistribuidoSemanal = redondearCentavos(
+    aporteSemanalInicial.meta + aporteSemanalInicial.emergencia + aporteSemanalInicial.deuda,
+  );
+  const sobranteNoAsignadoSemanal = redondearCentavos(
+    Math.max(0, flujoSemanal - totalDistribuidoSemanal),
+  );
   const brechaAdicionalSemanal = redondearCentavos(
-    Math.max(0, brechaSemanal - sobranteNoAsignadoSemanal)
+    Math.max(0, brechaSemanal - sobranteNoAsignadoSemanal),
   );
 
   const maxPosible = redondearCentavos(inicial.meta + flujoSemanal * plazoSemanas);
@@ -151,14 +179,14 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
     plazoDias,
     maxPosible,
     costo,
-    faltanteInicial
+    faltanteInicial,
   });
 
   const pct = (x) => (flujoSemanal > 0 ? Math.round((x / flujoSemanal) * 100) : 0);
   const reparto = {
     emergencia: pct(aporteSemanalInicial.emergencia),
     deuda: pct(aporteSemanalInicial.deuda),
-    meta: pct(aporteSemanalInicial.meta)
+    meta: pct(aporteSemanalInicial.meta),
   };
 
   const resumenMensual = [];
@@ -173,7 +201,7 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
       aporteDeuda: redondearCentavos(suma(bloque, (f) => f.aporteDeuda)),
       fondoMetaAlCierre: ultima.fondoMeta,
       fondoEmergenciaAlCierre: ultima.fondoEmergencia,
-      deudaRestante: ultima.deudaRestante
+      deudaRestante: ultima.deudaRestante,
     });
   }
 
@@ -188,15 +216,18 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
         objetivo: objetivoEmergencia,
         actual: inicial.emergencia,
         faltante: redondearCentavos(Math.max(0, objetivoEmergencia - inicial.emergencia)),
-        porcentaje: objetivoEmergencia > 0 ? Math.min(100, Math.round((inicial.emergencia / objetivoEmergencia) * 100)) : 100,
-        mesesCubiertos: gastosFijos > 0 ? Number((inicial.emergencia / gastosFijos).toFixed(1)) : 0
+        porcentaje:
+          objetivoEmergencia > 0
+            ? Math.min(100, Math.round((inicial.emergencia / objetivoEmergencia) * 100))
+            : 100,
+        mesesCubiertos: gastosFijos > 0 ? Number((inicial.emergencia / gastosFijos).toFixed(1)) : 0,
       },
       meta: {
         objetivo: redondearCentavos(costo),
         actual: inicial.meta,
         faltante: faltanteInicial,
-        porcentaje: costo > 0 ? Math.min(100, Math.round((inicial.meta / costo) * 100)) : 100
-      }
+        porcentaje: costo > 0 ? Math.min(100, Math.round((inicial.meta / costo) * 100)) : 100,
+      },
     },
 
     reparto,
@@ -215,27 +246,30 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
     diasParaMeta,
     cumplePlazoSolicitado: alcanzable && diasParaMeta <= plazoDias,
 
-    deudas: saldos.length === 0 && deudaInicial === 0
-      ? null
-      : {
-          total: redondearCentavos(deudaInicial),
-          tasaMax,
-          interesMensualEstimado,
-          semanasParaLiquidar: semanaDeudaLiquidada,
-          saldoAlFinal: filas.length ? filas[filas.length - 1].deudaRestante : redondearCentavos(deudaInicial),
-          detalle: (deudas || []).map((d) => ({
-            concepto: d.concepto,
-            monto: Number(d.monto) || 0,
-            tasa: parsearTasa(d.interesAnual)
-          }))
-        },
+    deudas:
+      saldos.length === 0 && deudaInicial === 0
+        ? null
+        : {
+            total: redondearCentavos(deudaInicial),
+            tasaMax,
+            interesMensualEstimado,
+            semanasParaLiquidar: semanaDeudaLiquidada,
+            saldoAlFinal: filas.length
+              ? filas[filas.length - 1].deudaRestante
+              : redondearCentavos(deudaInicial),
+            detalle: (deudas || []).map((d) => ({
+              concepto: d.concepto,
+              monto: Number(d.monto) || 0,
+              tasa: parsearTasa(d.interesAnual),
+            })),
+          },
 
     planSemanal: filas,
     resumenMensual,
 
     datosGraficaCalculados: filas.map((f) => ({
       etiqueta: `Semana ${f.semana}`,
-      ahorroAcumulado: f.fondoMeta
-    }))
+      ahorroAcumulado: f.fondoMeta,
+    })),
   };
 }

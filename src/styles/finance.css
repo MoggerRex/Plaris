@@ -1,0 +1,130 @@
+.visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
+}
+.visual-grid > .panel {
+  margin: 0;
+}
+.chart-wrap {
+  width: 100%;
+  min-width: 0;
+  height: 300px;
+}
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+td,
+th {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #dbe7df;
+  overflow-wrap: anywhere;
+}
+thead {
+  background: #e5f1eb;
+}
+tfoot {
+  font-weight: 600;
+}
+.analysis-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.analysis-layout > section {
+  min-width: 0;
+}
+.analysis-layout .visual-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.section-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.section-selector label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-panel {
+  margin-top: 0;
+}
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px 0;
+}
+.chat-message {
+  background: #eaf2ee;
+  padding: 16px;
+  border-radius: 9px;
+}
+.chat-message.user {
+  background: #d5eee6;
+}
+.chat-message p,
+.history-message p {
+  white-space: pre-wrap;
+  margin: 8px 0 0;
+}
+.analysis-history > details {
+  border-top: 1px solid #d2e2db;
+  padding: 15px 0;
+}
+.analysis-history summary {
+  font-weight: 600;
+}
+.analysis-history > summary {
+  margin-bottom: 15px;
+}
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+.template-grid > .panel {
+  margin: 0;
+}
+.template-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 20px;
+}
+.template-save > div {
+  flex: 1 1 300px;
+}
+.template-save > .field {
+  flex: 1 1 220px;
+}
+.template-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.template-card dd {
+  margin: 0;
+  text-align: right;
+}
+.guide-content {
+  min-height: 250px;
+}
+.guide-content p {
+  font-size: 1.1rem;
+  line-height: 1.9;
+}
+@media (max-width: 900px) {
+  .analysis-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

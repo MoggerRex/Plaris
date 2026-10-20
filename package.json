@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write src ARCHITECTURE.md",
+    "format:check": "prettier --check src ARCHITECTURE.md",
+    "test": "node --test tests/*.test.mjs src/utils/*.test.js"
   },
   "dependencies": {
     "lucide-react": "^1.57.0",
@@ -25,6 +28,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
+    "prettier": "3.9.10",
     "vite": "^8.3.0"
   }
 }

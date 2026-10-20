@@ -1,3 +1,4 @@
+import { snapshotTemplate, applyTemplate } from '../services/templateService';
 import { useCallback, useEffect, useState } from 'react';
 import { BudgetContext } from './useBudget';
 import {
@@ -27,9 +28,11 @@ export function BudgetProvider({ children }) {
       window.dispatchEvent(new CustomEvent('plaris-storage-status', { detail: '' }));
     } catch (error) {
       console.error('No se pudieron guardar los datos del presupuesto:', error);
-      window.dispatchEvent(new CustomEvent('plaris-storage-status', {
-        detail: 'No fue posible guardar los cambios en este dispositivo.',
-      }));
+      window.dispatchEvent(
+        new CustomEvent('plaris-storage-status', {
+          detail: 'No fue posible guardar los cambios en este dispositivo.',
+        }),
+      );
     }
   }, [data]);
 
@@ -41,7 +44,8 @@ export function BudgetProvider({ children }) {
     const budget = applySurplusAllocation(data.draft, data.draft.surplusAllocation);
     const result = validateZeroBasedBudget(budget);
     if (!result.valid) throw new Error(result.errors.join(' '));
-    if (result.pending > 0) throw new Error('Elige cómo quieres usar el dinero que queda sin asignar.');
+    if (result.pending > 0)
+      throw new Error('Elige cómo quieres usar el dinero que queda sin asignar.');
     const template = cloneBudget(budget);
     const month = currentMonthKey();
     setData((previous) => ({
@@ -78,6 +82,35 @@ export function BudgetProvider({ children }) {
     }));
   }
 
+  function updateProfile(profile) {
+    setData((previous) => ({ ...previous, profile }));
+  }
+
+  function updateDebts(debts) {
+    setData((previous) => ({ ...previous, deudas_activas: debts }));
+  }
+
+  function saveNamedTemplate(name, month) {
+    setData((previous) => ({
+      ...previous,
+      savedTemplates: [snapshotTemplate(previous, name, month), ...(previous.savedTemplates || [])],
+    }));
+  }
+
+  function applyNamedTemplate(id, month) {
+    setData((previous) => applyTemplate(previous, id, month));
+  }
+
+  function saveAnalysis(record) {
+    setData((previous) => ({
+      ...previous,
+      analysisHistory: [
+        { ...record, id: createId(), createdAt: new Date().toISOString() },
+        ...(previous.analysisHistory || []),
+      ].slice(0, 50),
+    }));
+  }
+
   function saveAsTemplate(month) {
     const budget = data.monthlyBudgets[month];
     if (budget) setData((previous) => ({ ...previous, template: cloneBudget(budget) }));
@@ -93,7 +126,9 @@ export function BudgetProvider({ children }) {
   function updateTransaction(id, transaction) {
     setData((previous) => ({
       ...previous,
-      transactions: previous.transactions.map((item) => item.id === id ? { ...item, ...transaction } : item),
+      transactions: previous.transactions.map((item) =>
+        item.id === id ? { ...item, ...transaction } : item,
+      ),
     }));
   }
 
@@ -105,18 +140,25 @@ export function BudgetProvider({ children }) {
   }
 
   return (
-    <BudgetContext.Provider value={{
-      ...data,
-      storageError,
-      updateDraft,
-      completeOnboarding,
-      ensureMonth,
-      updateBudget,
-      saveAsTemplate,
-      addTransaction,
-      updateTransaction,
-      deleteTransaction,
-    }}>
+    <BudgetContext.Provider
+      value={{
+        ...data,
+        storageError,
+        updateProfile,
+        updateDebts,
+        saveNamedTemplate,
+        applyNamedTemplate,
+        saveAnalysis,
+        updateDraft,
+        completeOnboarding,
+        ensureMonth,
+        updateBudget,
+        saveAsTemplate,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
+      }}
+    >
       {children}
     </BudgetContext.Provider>
   );

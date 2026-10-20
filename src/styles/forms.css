@@ -1,0 +1,165 @@
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #c8dbd6;
+  border-radius: 6px;
+  background: white;
+  color: #163e38;
+}
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+  accent-color: #105f56;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+.field span {
+  font-weight: 500;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.section-heading h2 {
+  margin-bottom: 6px;
+}
+.section-heading p {
+  font-size: 0.85rem;
+  color: #627e72;
+  margin-bottom: 0;
+}
+.budget-rows {
+  display: grid;
+  gap: 16px;
+}
+.budget-row {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #edf1ee;
+}
+.budget-row > .field {
+  flex: 1 1 170px;
+}
+.essential-choice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 12px;
+  font-size: 0.8rem;
+}
+.icon-button {
+  padding: 10px;
+  border: 0;
+  background: #f1f5f2;
+  border-radius: 5px;
+}
+.budget-total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 20px;
+}
+.goal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 18px;
+}
+fieldset {
+  min-width: 0;
+  border: 1px solid #c5d8cd;
+  padding: 20px;
+}
+.debt-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.debt-row legend {
+  font-weight: 600;
+  padding: 0 8px;
+}
+.transaction-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  align-items: end;
+  gap: 15px;
+}
+.form-buttons,
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 15px 0;
+}
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 25px 0;
+}
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+.progress-wrap progress {
+  width: 100%;
+  accent-color: #2eb6aa;
+  height: 8px;
+  margin: 15px 0;
+}
+.step-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+.step-labels button {
+  border: 0;
+  background: #e6efea;
+  padding: 10px;
+  border-radius: 5px;
+}
+.step-labels button.current {
+  background: #105f56;
+  color: white;
+}
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 15px;
+}
+.review-total {
+  display: grid;
+  gap: 12px;
+  background: #edf4ef;
+  padding: 20px;
+  border-radius: 6px;
+}
+.panel > fieldset label {
+  display: block;
+  margin: 15px 0;
+}

@@ -4,14 +4,23 @@ import { prepararContextoFinanciero } from './selectores.js';
 
 test('filtra por mes, convierte centavos y conserva los detalles sin modificar el estado', () => {
   const data = {
-    monthlyBudgets: { '2026-10': {
-      incomes: [{ amountCents: 1500000 }],
-      expenses: [{ amountCents: 1000000 }],
-      savings: [{ amountCents: 500000 }],
-    } },
+    monthlyBudgets: {
+      '2026-10': {
+        incomes: [{ amountCents: 1500000 }],
+        expenses: [{ amountCents: 1000000 }],
+        savings: [{ amountCents: 500000 }],
+      },
+    },
     transactions: [
       { id: '1', date: '2026-10-15', type: 'income', amountCents: 1500000 },
-      { id: '2', date: '2026-10-16', type: 'expense', amountCents: 600025, category: 'Despensa', description: 'Compra semanal' },
+      {
+        id: '2',
+        date: '2026-10-16',
+        type: 'expense',
+        amountCents: 600025,
+        category: 'Despensa',
+        description: 'Compra semanal',
+      },
       { id: '3', date: '2026-10-17', type: 'saving', amountCents: 200000 },
       { id: '4', date: '2026-11-01', type: 'expense', amountCents: 999999 },
     ],

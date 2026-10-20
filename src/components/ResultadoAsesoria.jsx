@@ -4,14 +4,14 @@ const COLORES = {
   primario: '#106057',
   secundario: '#34b8a9',
   fondo: '#fafafa',
-  amarillo: '#ffd53f'
+  amarillo: '#ffd53f',
 };
 
 const COLOR_CATEGORIA = {
   excelente: '#2ecc71',
   viable: '#3498db',
   arriesgado: '#f39c12',
-  imposible: '#e74c3c'
+  imposible: '#e74c3c',
 };
 
 const tarjeta = {
@@ -19,24 +19,36 @@ const tarjeta = {
   padding: '22px',
   borderRadius: '12px',
   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-  marginBottom: '20px'
+  marginBottom: '20px',
 };
 
 function Barra({ porcentaje, color }) {
   const valor = Math.max(0, Math.min(100, Number(porcentaje) || 0));
   return (
     <div style={{ background: '#e8eeee', borderRadius: 6, height: 10, overflow: 'hidden' }}>
-      <div style={{ width: `${valor}%`, background: color, height: '100%', transition: 'width 0.4s' }} />
+      <div
+        style={{ width: `${valor}%`, background: color, height: '100%', transition: 'width 0.4s' }}
+      />
     </div>
   );
 }
 
 function FondoCard({ titulo, subtitulo, actual, objetivo, porcentaje, color }) {
   return (
-    <div style={{ flex: 1, minWidth: 240, border: `2px solid ${color}`, borderRadius: 10, padding: 16 }}>
+    <div
+      style={{
+        flex: 1,
+        minWidth: 240,
+        border: `2px solid ${color}`,
+        borderRadius: 10,
+        padding: 16,
+      }}
+    >
       <div style={{ fontWeight: 700, color: COLORES.primario }}>{titulo}</div>
       <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 10 }}>{subtitulo}</div>
-      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: COLORES.primario }}>{$(actual)}</div>
+      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: COLORES.primario }}>
+        {$(actual)}
+      </div>
       <div style={{ fontSize: '0.85rem', color: '#555', margin: '2px 0 8px' }}>
         de {$(objetivo)} ({porcentaje}%)
       </div>
@@ -61,7 +73,11 @@ const Lista = ({ items, ordenada }) => {
   if (!lista.length) return <span>No hay elementos adicionales disponibles.</span>;
   return (
     <Tag style={{ margin: 0, paddingLeft: 20 }}>
-      {lista.map((x, i) => <li key={`${i}-${String(x).slice(0, 20)}`} style={{ marginBottom: 4 }}>{x}</li>)}
+      {lista.map((x, i) => (
+        <li key={`${i}-${String(x).slice(0, 20)}`} style={{ marginBottom: 4 }}>
+          {x}
+        </li>
+      ))}
     </Tag>
   );
 };
@@ -83,7 +99,9 @@ export default function ResultadoAsesoria({ resultado }) {
     return (
       <div style={{ ...tarjeta, borderTop: '5px solid #e74c3c' }}>
         <strong style={{ color: '#e74c3c' }}>La respuesta está incompleta</strong>
-        <p style={{ marginBottom: 0 }}>No se recibieron todos los datos para mostrar la asesoría. Intenta generarla de nuevo.</p>
+        <p style={{ marginBottom: 0 }}>
+          No se recibieron todos los datos para mostrar la asesoría. Intenta generarla de nuevo.
+        </p>
       </div>
     );
   }
@@ -101,23 +119,36 @@ export default function ResultadoAsesoria({ resultado }) {
       {/* Clasificación */}
       <div style={{ ...tarjeta, borderTop: `5px solid ${COLORES.secundario}` }}>
         <div style={{ color: '#666', fontSize: '0.85rem', marginBottom: 8 }}>Plan {plan}</div>
-        <span style={{
-          display: 'inline-block', padding: '6px 14px', borderRadius: 20, fontWeight: 700,
-          color: '#fff', backgroundColor: COLOR_CATEGORIA[clf.categoria] ?? '#999'
-        }}>
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '6px 14px',
+            borderRadius: 20,
+            fontWeight: 700,
+            color: '#fff',
+            backgroundColor: COLOR_CATEGORIA[clf.categoria] ?? '#999',
+          }}
+        >
           {clf.categoria.toUpperCase()}
         </span>
         {Array.isArray(clf.detalleEvaluacion) ? (
           <div style={{ display: 'grid', gap: 14, marginTop: 18 }}>
             {clf.detalleEvaluacion.map(({ titulo, texto }) => (
-              <section key={titulo} style={{ borderLeft: `3px solid ${COLORES.secundario}`, paddingLeft: 12 }}>
+              <section
+                key={titulo}
+                style={{ borderLeft: `3px solid ${COLORES.secundario}`, paddingLeft: 12 }}
+              >
                 <h4 style={{ margin: '0 0 4px', color: COLORES.primario }}>{titulo}</h4>
-                <p style={{ margin: 0, color: '#333', lineHeight: 1.55, textAlign: 'left' }}>{texto}</p>
+                <p style={{ margin: 0, color: '#333', lineHeight: 1.55, textAlign: 'left' }}>
+                  {texto}
+                </p>
               </section>
             ))}
           </div>
         ) : (
-          <p style={{ margin: '12px 0 0', color: '#333', lineHeight: 1.55 }}>{clf.mensajeEvaluacion}</p>
+          <p style={{ margin: '12px 0 0', color: '#333', lineHeight: 1.55 }}>
+            {clf.mensajeEvaluacion}
+          </p>
         )}
       </div>
 
@@ -147,8 +178,17 @@ export default function ResultadoAsesoria({ resultado }) {
           <p style={{ marginBottom: 0, marginTop: 16, fontSize: '0.9rem', color: '#444' }}>
             De tus <strong>{$(c.flujoLibreSemanal)}</strong> libres por semana:{' '}
             <strong>{c.reparto.meta}%</strong> va a la meta
-            {c.reparto.emergencia > 0 && <>, <strong>{c.reparto.emergencia}%</strong> a emergencia</>}
-            {c.reparto.deuda > 0 && <>, <strong>{c.reparto.deuda}%</strong> a deudas</>}.
+            {c.reparto.emergencia > 0 && (
+              <>
+                , <strong>{c.reparto.emergencia}%</strong> a emergencia
+              </>
+            )}
+            {c.reparto.deuda > 0 && (
+              <>
+                , <strong>{c.reparto.deuda}%</strong> a deudas
+              </>
+            )}
+            .
           </p>
         )}
       </div>
@@ -164,16 +204,24 @@ export default function ResultadoAsesoria({ resultado }) {
             </Seccion>
             <Seccion titulo="Llamado de atención">{a.llamadoDeAtencion}</Seccion>
             <Seccion titulo="Riesgo: ahorro y deudas">{a.analisisRiesgoAhorroYDeuda}</Seccion>
-            <Seccion titulo="Estrategia recomendada"><Lista items={a.estrategiaRecomendada} ordenada /></Seccion>
-            <Seccion titulo="Veredicto" acento={COLORES.primario}>{a.conclusionYVeredicto}</Seccion>
+            <Seccion titulo="Estrategia recomendada">
+              <Lista items={a.estrategiaRecomendada} ordenada />
+            </Seccion>
+            <Seccion titulo="Veredicto" acento={COLORES.primario}>
+              {a.conclusionYVeredicto}
+            </Seccion>
           </>
         ) : (
           <>
             <Seccion titulo="Diagnóstico">{a.diagnostico}</Seccion>
             <Seccion titulo="Sobre tu fondo de emergencia">{a.analisisFondoEmergencia}</Seccion>
             <Seccion titulo="Sobre tu fondo de la meta">{a.analisisFondoMeta}</Seccion>
-            <Seccion titulo="Plan sugerido" acento={COLORES.primario}>{a.planSugerido}</Seccion>
-            <Seccion titulo="Puntos clave" acento={COLORES.amarillo}><Lista items={a.puntosClave} /></Seccion>
+            <Seccion titulo="Plan sugerido" acento={COLORES.primario}>
+              {a.planSugerido}
+            </Seccion>
+            <Seccion titulo="Puntos clave" acento={COLORES.amarillo}>
+              <Lista items={a.puntosClave} />
+            </Seccion>
           </>
         )}
       </div>
@@ -185,9 +233,16 @@ export default function ResultadoAsesoria({ resultado }) {
           <p style={{ margin: 0, fontSize: '0.95rem' }}>
             Debes <strong>{$(c.deudas.total)}</strong> y solo en intereses pagas ≈{' '}
             <strong>{$(c.deudas.interesMensualEstimado)}</strong> al mes.{' '}
-            {c.deudas.semanasParaLiquidar !== null
-              ? <>Con este plan las liquidas en la <strong>semana {c.deudas.semanasParaLiquidar}</strong>.</>
-              : <>Al llegar a tu meta aún quedarían <strong>{$(c.deudas.saldoAlFinal)}</strong>.</>}
+            {c.deudas.semanasParaLiquidar !== null ? (
+              <>
+                Con este plan las liquidas en la{' '}
+                <strong>semana {c.deudas.semanasParaLiquidar}</strong>.
+              </>
+            ) : (
+              <>
+                Al llegar a tu meta aún quedarían <strong>{$(c.deudas.saldoAlFinal)}</strong>.
+              </>
+            )}
           </p>
         </div>
       )}
@@ -202,10 +257,24 @@ export default function ResultadoAsesoria({ resultado }) {
               : 'Con tus ingresos y gastos actuales no hay flujo libre para depositar. Primero hay que reducir gastos.'}
           </p>
         ) : (
-          <div style={{ maxHeight: 380, overflow: 'auto', border: '1px solid #e3e8e8', borderRadius: 8 }}>
+          <div
+            style={{
+              maxHeight: 380,
+              overflow: 'auto',
+              border: '1px solid #e3e8e8',
+              borderRadius: 8,
+            }}
+          >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
               <thead>
-                <tr style={{ background: COLORES.primario, color: '#fff', position: 'sticky', top: 0 }}>
+                <tr
+                  style={{
+                    background: COLORES.primario,
+                    color: '#fff',
+                    position: 'sticky',
+                    top: 0,
+                  }}
+                >
                   <th style={th}>Semana</th>
                   <th style={th}>A la meta</th>
                   <th style={th}>A emergencia</th>
@@ -217,11 +286,15 @@ export default function ResultadoAsesoria({ resultado }) {
                 {planSemanal.map((f) => (
                   <tr key={f.semana} style={{ borderTop: '1px solid #eef2f2' }}>
                     <td style={td}>{f.semana}</td>
-                    <td style={td}><strong>{$(f.aporteMeta)}</strong></td>
+                    <td style={td}>
+                      <strong>{$(f.aporteMeta)}</strong>
+                    </td>
                     <td style={td}>{$(f.aporteEmergencia)}</td>
                     {hayDeudas && <td style={td}>{$(f.aporteDeuda)}</td>}
                     <td style={td}>
-                      <div style={{ fontSize: '0.8rem', marginBottom: 3 }}>{$(f.fondoMeta)} · {f.porcentajeMeta}%</div>
+                      <div style={{ fontSize: '0.8rem', marginBottom: 3 }}>
+                        {$(f.fondoMeta)} · {f.porcentajeMeta}%
+                      </div>
                       <Barra porcentaje={f.porcentajeMeta} color={COLORES.secundario} />
                     </td>
                   </tr>
@@ -250,7 +323,9 @@ export default function ResultadoAsesoria({ resultado }) {
               <tbody>
                 {resumenMensual.map((r) => (
                   <tr key={r.periodo} style={{ borderTop: '1px solid #eef2f2' }}>
-                    <td style={td}>{r.periodo} <span style={{ color: '#888' }}>(sem. {r.semanas})</span></td>
+                    <td style={td}>
+                      {r.periodo} <span style={{ color: '#888' }}>(sem. {r.semanas})</span>
+                    </td>
                     <td style={td}>{$(r.aporteMeta)}</td>
                     <td style={td}>{$(r.aporteEmergencia)}</td>
                     {hayDeudas && <td style={td}>{$(r.aporteDeuda)}</td>}

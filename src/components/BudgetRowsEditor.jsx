@@ -1,21 +1,20 @@
+import MoneyInput from './common/MoneyInput';
 import { Plus, Trash2 } from 'lucide-react';
-import {
-  amountToCents,
-  centsToInput,
-  createId,
-  formatCurrency,
-  sumAmounts,
-} from '../services/budgetService';
+import { createId, formatCurrency, sumAmounts } from '../services/budgetService';
 
 export default function BudgetRowsEditor({ section, rows, onChange, label, showCategory = false }) {
   function updateRow(id, key, value) {
-    onChange(rows.map((row) => row.id === id
-      ? {
-        ...row,
-        [key]: key === 'amountCents' ? amountToCents(value) : value,
-        ...(key === 'name' && section !== 'incomes' ? { category: value } : {}),
-      }
-      : row));
+    onChange(
+      rows.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              [key]: value,
+              ...(key === 'name' && section !== 'incomes' ? { category: value } : {}),
+            }
+          : row,
+      ),
+    );
   }
 
   function addRow() {
@@ -57,16 +56,22 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
             )}
             <label className="field">
               <span>Monto mensual (MXN)</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={centsToInput(row.amountCents)}
-                onChange={(event) => updateRow(row.id, 'amountCents', event.target.value)}
+              <MoneyInput
+                value={row.amountCents}
+                onChange={(value) => updateRow(row.id, 'amountCents', value)}
                 aria-label={`${label}: monto mensual`}
               />
             </label>
-            {section === 'expenses' && <label className="essential-choice"><input type="checkbox" checked={row.essential !== false} onChange={event => updateRow(row.id, 'essential', event.target.checked)} /> Necesario</label>}
+            {section === 'expenses' && (
+              <label className="essential-choice">
+                <input
+                  type="checkbox"
+                  checked={row.essential !== false}
+                  onChange={(event) => updateRow(row.id, 'essential', event.target.checked)}
+                />{' '}
+                Necesario
+              </label>
+            )}
             <button
               type="button"
               className="icon-button danger"
@@ -79,7 +84,10 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
         ))}
         {rows.length === 0 && <p className="empty-state">Aún no agregas elementos.</p>}
       </div>
-      <div className="budget-total"><span>Total mensual planeado</span><strong>{formatCurrency(sumAmounts(rows))}</strong></div>
+      <div className="budget-total">
+        <span>Total mensual planeado</span>
+        <strong>{formatCurrency(sumAmounts(rows))}</strong>
+      </div>
     </section>
   );
 }

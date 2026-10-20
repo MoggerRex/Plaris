@@ -9,7 +9,9 @@ const STORAGE_KEY = 'plaris-budget-v1';
 const LEGACY_STORAGE_PREFIX = `${STORAGE_KEY}:`;
 
 export function createId() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 }
 
 export function currentMonthKey() {
@@ -27,7 +29,7 @@ export function centsToInput(cents) {
 }
 
 export function formatCurrency(cents) {
-  return currency.format((Number(cents || 0) / 100));
+  return currency.format(Number(cents || 0) / 100);
 }
 
 export function sumAmounts(items = []) {
@@ -82,9 +84,12 @@ export function validateZeroBasedBudget(budget) {
       errors.push(`Completa el nombre de cada elemento de ${label} que tenga un monto.`);
     }
   }
-  if (pending < 0) errors.push('Los gastos y ahorros superan los ingresos. Reduce la distribución.');
-  if (pending > 0) errors.push('Todavía hay dinero sin asignar. Distribuye todo el ingreso planeado.');
-  if (pending === 0 && totals.income === 0) errors.push('El ingreso planeado debe ser mayor a cero.');
+  if (pending < 0)
+    errors.push('Los gastos y ahorros superan los ingresos. Reduce la distribución.');
+  if (pending > 0)
+    errors.push('Todavía hay dinero sin asignar. Distribuye todo el ingreso planeado.');
+  if (pending === 0 && totals.income === 0)
+    errors.push('El ingreso planeado debe ser mayor a cero.');
 
   return { valid: errors.length === 0, errors, totals, pending };
 }
@@ -99,11 +104,15 @@ export function createInitialBudgetState() {
     draft: {
       incomes: [{ id: createId(), name: '', category: 'Sueldo', amountCents: 0 }],
       expenses: [
-        ...['Vivienda', 'Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Otros']
-          .map((name) => ({ id: createId(), name, category: name, amountCents: 0 })),
+        ...['Vivienda', 'Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Otros'].map(
+          (name) => ({ id: createId(), name, category: name, amountCents: 0 }),
+        ),
       ],
       savings: [{ id: createId(), name: '', category: 'Ahorro', amountCents: 0 }],
     },
+    profile: { displayName: '', goalName: '', cost: '', days: 90, savings: '', reserve: '' },
+    savedTemplates: [],
+    analysisHistory: [],
     template: null,
     monthlyBudgets: {},
     transactions: [],
@@ -140,9 +149,23 @@ export function readBudgetState() {
 
     const parsed = JSON.parse(saved);
     const initial = createInitialBudgetState();
+    let legacyGoal = {};
+    try {
+      legacyGoal = JSON.parse(localStorage.getItem('plaris-agent-goal') || '{}') || {};
+    } catch {
+      /* Keep the budget even when legacy goal data is invalid. */
+    }
     return {
       ...initial,
       ...parsed,
+      profile: {
+        ...initial.profile,
+        ...legacyGoal,
+        goalName: legacyGoal.name || '',
+        ...parsed.profile,
+      },
+      savedTemplates: Array.isArray(parsed.savedTemplates) ? parsed.savedTemplates : [],
+      analysisHistory: Array.isArray(parsed.analysisHistory) ? parsed.analysisHistory : [],
       draft: { ...initial.draft, ...parsed.draft },
       monthlyBudgets: parsed.monthlyBudgets || {},
       transactions: parsed.transactions || [],

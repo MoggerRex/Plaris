@@ -1,0 +1,191 @@
+.app-layout {
+  width: 100%;
+  min-height: 100dvh;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 78px;
+  background: #2eb6aa;
+  border-bottom: 2px solid #12675e;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-family: Georgia, serif;
+  font-size: 2.4rem;
+  border-right: 1px solid #19776c;
+}
+.brand span {
+  font-size: 1.7rem;
+}
+.menu-toggle {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  padding: 14px;
+}
+.app-header nav {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px;
+}
+.app-header nav a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+.app-header nav a.active {
+  background: #105f56;
+  color: #d8f3eb;
+}
+.app-header svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.7;
+  flex-shrink: 0;
+}
+.app-header p {
+  flex: 1;
+  min-width: 180px;
+  padding: 12px 22px;
+  margin: 0;
+  font-family: Georgia, serif;
+  font-variant: small-caps;
+  text-align: right;
+}
+.app-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.app-body.sidebar-open {
+  grid-template-columns: minmax(220px, 18%) minmax(0, 1fr);
+}
+.route-content {
+  min-width: 0;
+}
+.template-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 26px 20px;
+  min-width: 0;
+  background: #dff1ed;
+  border-right: 1px solid #9ec5bd;
+  overflow-wrap: anywhere;
+}
+.template-sidebar h2 {
+  font-size: 1.8rem;
+}
+.template-sidebar p {
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
+.template-sidebar > a:not(.button) {
+  padding: 8px 0;
+}
+.sidebar-profile {
+  margin-top: auto;
+  border-top: 1px solid #9ec5bd;
+}
+.page-shell {
+  width: 100%;
+  padding: clamp(18px, 3vw, 44px);
+  margin: 0;
+}
+.page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 24px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #9ec5bd;
+}
+.page-heading h1 {
+  font-size: clamp(2rem, 4vw, 4.5rem);
+  margin-bottom: 0;
+}
+.heading-actions {
+  display: flex;
+  gap: 15px;
+}
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+.section-tabs a,
+.section-tabs button {
+  background: transparent;
+  border: 1px solid #b7d2c7;
+  border-radius: 5px;
+  padding: 11px 17px;
+  font-weight: 600;
+}
+.section-tabs a.active,
+.section-tabs button[aria-pressed='true'] {
+  background: #105f56;
+  color: white;
+  border-color: #105f56;
+}
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 1050px) {
+  .app-header nav a span {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .app-header {
+    align-items: center;
+  }
+  .brand {
+    font-size: 2rem;
+    padding: 8px 12px;
+  }
+  .brand span {
+    font-size: 1.35rem;
+  }
+  .app-header p {
+    display: none;
+  }
+  .app-header nav {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 1px;
+    padding: 3px;
+  }
+  .app-header nav a {
+    padding: 9px;
+  }
+  .menu-toggle {
+    padding: 8px;
+  }
+  .app-body.sidebar-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #9ec5bd;
+  }
+  .page-heading {
+    align-items: start;
+  }
+}
