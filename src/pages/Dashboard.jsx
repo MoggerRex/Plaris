@@ -5,7 +5,8 @@ import BudgetRowsEditor from '../components/BudgetRowsEditor';
 import SummaryCard from '../components/SummaryCard';
 import { useBudget } from '../context/useBudget';
 import { prepararContextoFinanciero } from '../utils/selectores';
-import { generarPlanAvanzadoCoT } from '../services/ollamaService';
+import { clasificarViabilidadMeta, generarPlanAvanzadoCoT } from '../services/ollamaService';
+import ResultadoAsesoria from '../components/ResultadoAsesoria';
 import {
   amountToCents,
   centsToInput,
@@ -34,20 +35,42 @@ export default function Dashboard() {
   const [advisorLoading, setAdvisorLoading] = useState(false);
   const [advisorResult, setAdvisorResult] = useState(null);
 
+
   async function consultarAsesor() {
-    setAdvisorLoading(true);
-    setAdvisorResult(null);
-    try {
-      const contexto = prepararContextoFinanciero({ monthlyBudgets, transactions }, month);
-      const meta = metas_financieras[0] || { nombre: 'Ajuste de presupuesto', costo: 0, plazoDias: 30 };
-      const resultado = await generarPlanAvanzadoCoT(contexto, deudas_activas, meta);
-      setAdvisorResult({ periodo: month, resultado });
-    } catch {
-      setAdvisorResult({ periodo: month, resultado: { error: 'No se pudo consultar al asesor. Intenta nuevamente.' } });
-    } finally {
-      setAdvisorLoading(false);
-    }
+  setAdvisorLoading(true);
+  setAdvisorResult(null);
+  try {
+    const contexto = prepararContextoFinanciero({ monthlyBudgets, transactions }, month);
+    const meta = metas_financieras[0] || { nombre: 'Ajuste de presupuesto', costo: 0, plazoDias: 30 };
+    const datosFinancieros = {
+      ingresosMensuales: contexto.ingresos.proyectado,
+      gastosFijos: contexto.gastos.proyectado,
+      gastosVariables: 0,
+      ahorroActual: meta.ahorroActual || 0,
+    };
+
+    const deudas = deudas_activas || [];
+    const clasificacion = await clasificarViabilidadMeta(datosFinancieros, meta, deudas);
+
+    const asesoriaAvanzada = await generarPlanAvanzadoCoT(datosFinancieros, deudas, meta, clasificacion);
+
+    const resultadoFinal = {
+      plan: 'Avanzado',
+      clasificacionFlash: clasificacion,
+      asesoria: asesoriaAvanzada
+    };
+
+    setAdvisorResult({ periodo: month, resultado: resultadoFinal });
+  } catch (error) {
+    console.error('No se pudo consultar al asesor:', error);
+    setAdvisorResult({
+      periodo: month,
+      resultado: { error: 'No se pudo consultar al asesor. Intenta nuevamente.' }
+    });
+  } finally {
+    setAdvisorLoading(false);
   }
+}
 
   useEffect(() => ensureMonth(month), [month, ensureMonth]);
 
@@ -193,10 +216,8 @@ export default function Dashboard() {
         </div>
         {advisorResult && (
           <div role="status">
-            <p>Análisis de {advisorResult.periodo}</p>
-            {advisorResult.resultado.error
-              ? <p className="form-error" role="alert">{advisorResult.resultado.error}</p>
-              : <pre>{JSON.stringify(advisorResult.resultado, null, 2)}</pre>}
+            <p style={{ marginBottom: '16px', fontWeight: 600 }}>Análisis de {advisorResult.periodo}</p>
+            <ResultadoAsesoria resultado={advisorResult.resultado} />
           </div>
         )}
       </section>

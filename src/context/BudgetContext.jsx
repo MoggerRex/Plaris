@@ -37,6 +37,10 @@ export function BudgetProvider({ children }) {
     setData((previous) => ({ ...previous, draft: { ...previous.draft, [section]: items } }));
   }
 
+  function updateMetasFinancieras(metas) {
+    setData((previous) => ({ ...previous, metas_financieras: metas }));
+  }
+
   function completeOnboarding() {
     const budget = applySurplusAllocation(data.draft, data.draft.surplusAllocation);
     const result = validateZeroBasedBudget(budget);
@@ -109,6 +113,7 @@ export function BudgetProvider({ children }) {
       ...data,
       storageError,
       updateDraft,
+      updateMetasFinancieras,
       completeOnboarding,
       ensureMonth,
       updateBudget,
