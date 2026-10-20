@@ -5,6 +5,8 @@ import { BudgetProvider } from './context/BudgetContext.jsx';
 import { useBudget } from './context/useBudget';
 import Onboarding from './pages/onboarding/Onboarding';
 
+const BudgetForm = lazy(() => import('./pages/BudgetForm'));
+const Movimientos = lazy(() => import('./pages/Movimientos'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 function OnboardingOnly() {
@@ -33,6 +35,8 @@ export default function App() {
               </Route>
               <Route element={<CompletedOnboarding />}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/presupuesto/:section" element={<BudgetForm />} />
+                <Route path="/movimientos" element={<Movimientos />} />
               </Route>
             </Route>
             <Route path="/" element={<Navigate to="/onboarding/ingresos" replace />} />

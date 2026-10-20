@@ -66,6 +66,7 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
                 aria-label={`${label}: monto mensual`}
               />
             </label>
+            {section === 'expenses' && <label className="essential-choice"><input type="checkbox" checked={row.essential !== false} onChange={event => updateRow(row.id, 'essential', event.target.checked)} /> Necesario</label>}
             <button
               type="button"
               className="icon-button danger"

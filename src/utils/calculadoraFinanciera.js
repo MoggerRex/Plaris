@@ -69,13 +69,11 @@ export function calcularMetricasFinancieras(datos, meta, deudas = []) {
   // Porcentajes de reparto leídos directamente desde los campos
   let pctDeuda = saldos.length === 0 ? 0 : tasaMax >= 24 ? 0.5 : tasaMax >= 12 ? 0.35 : 0.2;
   let pctEmergenciaCustom = 0.3; // Default 30%
-  let pctMetaCustom = 0.7; // Default 70%
 
   if (datos.distribucionPersonalizada && flujoLibreMensual > 0) {
     const dist = datos.distribucionPersonalizada;
     if (dist.deudas >= 0) pctDeuda = Math.min(1, dist.deudas / flujoLibreMensual);
     if (dist.emergencia >= 0) pctEmergenciaCustom = Math.min(1, dist.emergencia / flujoLibreMensual);
-    if (dist.meta >= 0) pctMetaCustom = Math.min(1, dist.meta / flujoLibreMensual);
   }
 
   const interesMensualEstimado = redondearCentavos(suma(saldos, (d) => (d.saldo * d.tasa) / 100 / 12));

@@ -1,287 +1,48 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Check, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
-import BudgetRowsEditor from '../components/BudgetRowsEditor';
-import SummaryCard from '../components/SummaryCard';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowUpRight, Send, SlidersHorizontal } from 'lucide-react';
+import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useBudget } from '../context/useBudget';
-import { prepararContextoFinanciero } from '../utils/selectores';
-import { generarPlanAvanzadoCoT } from '../services/ollamaService';
-import {
-  amountToCents,
-  centsToInput,
-  currentMonthKey,
-  formatCurrency,
-  sumAmounts,
-  totalsForBudget,
-} from '../services/budgetService';
-
-const TRANSACTION_TYPES = [
-  { value: 'income', label: 'Ingreso', section: 'incomes' },
-  { value: 'expense', label: 'Gasto', section: 'expenses' },
-  { value: 'saving', label: 'Ahorro', section: 'savings' },
-];
-
+import { currentMonthKey, formatCurrency, sumAmounts, totalsForBudget } from '../services/budgetService';
+import { analyze, money } from '../domain/planner';
+import { requestAdvice } from '../services/plannerAdvice';
+import { advicePlans } from '../domain/advicePlans';
+function readSettings() { try { return JSON.parse(localStorage.getItem('plaris-agent-goal')) || {}; } catch { return {}; } }
 export default function Dashboard() {
-  const {
-    monthlyBudgets, template, transactions, ensureMonth, updateBudget, saveAsTemplate,
-    addTransaction, updateTransaction, deleteTransaction, storageError,
-    deudas_activas, metas_financieras,
-  } = useBudget();
-  const [month, setMonth] = useState(currentMonthKey);
-  const [editingTransaction, setEditingTransaction] = useState(null);
-  const [newTransactionType, setNewTransactionType] = useState('expense');
-  const [message, setMessage] = useState('');
-  const [advisorLoading, setAdvisorLoading] = useState(false);
-  const [advisorResult, setAdvisorResult] = useState(null);
-
-  async function consultarAsesor() {
-    setAdvisorLoading(true);
-    setAdvisorResult(null);
-    try {
-      const contexto = prepararContextoFinanciero({ monthlyBudgets, transactions }, month);
-      const meta = metas_financieras[0] || { nombre: 'Ajuste de presupuesto', costo: 0, plazoDias: 30 };
-      const resultado = await generarPlanAvanzadoCoT(contexto, deudas_activas, meta);
-      setAdvisorResult({ periodo: month, resultado });
-    } catch {
-      setAdvisorResult({ periodo: month, resultado: { error: 'No se pudo consultar al asesor. Intenta nuevamente.' } });
-    } finally {
-      setAdvisorLoading(false);
-    }
-  }
-
-  useEffect(() => ensureMonth(month), [month, ensureMonth]);
-
-  const budget = monthlyBudgets[month] || template || { incomes: [], expenses: [], savings: [] };
-  const monthTransactions = useMemo(
-    () => transactions.filter((item) => item.date?.slice(0, 7) === month),
-    [transactions, month],
-  );
-  const planned = totalsForBudget(budget);
-  const actual = {
-    income: sumAmounts(monthTransactions.filter((item) => item.type === 'income')),
-    expenses: sumAmounts(monthTransactions.filter((item) => item.type === 'expense')),
-    savings: sumAmounts(monthTransactions.filter((item) => item.type === 'saving')),
-  };
-
-  function saveTransaction(event) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const amountCents = amountToCents(form.get('amount'));
-    if (amountCents <= 0) {
-      setMessage('El monto del movimiento debe ser mayor a cero.');
-      return;
-    }
-    const transaction = {
-      type: String(form.get('type')),
-      category: String(form.get('category')).trim(),
-      description: String(form.get('description')).trim(),
-      date: String(form.get('date')),
-      amountCents,
-    };
-    if (!transaction.category || !transaction.date) {
-      setMessage('Completa la categoría y la fecha del movimiento.');
-      return;
-    }
-    if (editingTransaction?.id) updateTransaction(editingTransaction.id, transaction);
-    else addTransaction(transaction);
-    setEditingTransaction(null);
-    setNewTransactionType('expense');
-    setMessage('Movimiento guardado.');
-  }
-
-  function startEdit(transaction) {
-    setEditingTransaction(transaction);
-    setMessage('');
-  }
-
-  function changeType(type) {
-    if (editingTransaction) setEditingTransaction((previous) => ({ ...previous, type, category: '' }));
-    else setNewTransactionType(type);
-  }
-
-  const categoriesFor = (type) => {
-    const section = TRANSACTION_TYPES.find((item) => item.value === type)?.section;
-    return [...new Set((budget[section] || []).map((item) => item.category || item.name).filter(Boolean))];
-  };
-
-  const chartData = makeYearData(month, transactions, monthlyBudgets);
-
-  return (
-    <main className="page-shell dashboard-shell">
-      <div className="dashboard-heading">
-        <div><span className="eyebrow">Tu dinero, en perspectiva</span><h1>Resumen financiero</h1><p>Planea cada peso y compara con tus movimientos reales.</p></div>
-        <label className="field month-picker"><span>Mes del presupuesto</span><input type="month" value={month} onChange={(event) => {
-          if (event.target.value) { setMonth(event.target.value); setMessage(''); }
-        }} /></label>
-      </div>
-      {storageError && <div className="validation-box warning" role="alert">{storageError}</div>}
-      <div className="summary-grid">
-        <SummaryCard label="Ingresos planeados" value={formatCurrency(planned.income)} detail={`Real: ${formatCurrency(actual.income)}`} tone="income" />
-        <SummaryCard label="Gastos planeados" value={formatCurrency(planned.expenses)} detail={`Real: ${formatCurrency(actual.expenses)}`} tone="expense" />
-        <SummaryCard label="Ahorro planeado" value={formatCurrency(planned.savings)} detail={`Real: ${formatCurrency(actual.savings)}`} tone="saving" />
-        <SummaryCard
-          label="Disponible planeado"
-          value={formatCurrency(planned.income - planned.expenses - planned.savings)}
-          detail={`Disponible real: ${formatCurrency(actual.income - actual.expenses - actual.savings)}`}
-          tone="available"
-        />
-      </div>
-
-      <section className="panel budget-panel">
-        <div className="section-heading">
-          <div><h2>Presupuesto mensual</h2><p>Este mes se edita de forma independiente a meses anteriores.</p></div>
-          <button type="button" className="button button-secondary" onClick={() => { saveAsTemplate(month); setMessage('Plantilla predeterminada actualizada.'); }}>
-            <Save size={16} /> Guardar como plantilla
-          </button>
-        </div>
-        <div className="budget-editors">
-          {TRANSACTION_TYPES.map(({ section, label }) => (
-            <BudgetRowsEditor
-              key={section}
-              label={label === 'Ingreso' ? 'Ingresos planeados' : label === 'Gasto' ? 'Gastos planeados' : 'Ahorros planeados'}
-              section={section}
-              rows={budget[section] || []}
-              onChange={(rows) => updateBudget(month, section, rows)}
-              showCategory={section === 'incomes'}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="panel">
-        <div className="section-heading"><div><h2>Planeado vs. real</h2><p>Los movimientos reales no modifican los montos planeados.</p></div></div>
-        <div className="table-scroll">
-          <table>
-            <thead><tr><th>Tipo</th><th>Categoría</th><th>Planeado</th><th>Real</th><th>Diferencia</th></tr></thead>
-            <tbody>
-              {TRANSACTION_TYPES.flatMap(({ value, label, section }) => {
-                const rows = budget[section] || [];
-                const plannedRows = rows.length ? rows : [{ name: 'Sin categorías', category: '', amountCents: 0 }];
-                return plannedRows.map((row, index) => {
-                  const category = row.category || row.name;
-                  const spent = monthTransactions
-                    .filter((item) => item.type === value && (item.category === category || (index === 0 && !category)))
-                    .reduce((total, item) => total + item.amountCents, 0);
-                  return <tr key={`${value}-${row.id || index}`}><td>{label}</td><td>{category || 'Sin categorías'}</td><td>{formatCurrency(row.amountCents)}</td><td>{formatCurrency(spent)}</td><td className={spent > row.amountCents ? 'text-danger' : ''}>{formatCurrency(row.amountCents - spent)}</td></tr>;
-                });
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <TransactionPanel
-        month={month}
-        transactions={monthTransactions}
-        categoriesFor={categoriesFor}
-        editingTransaction={editingTransaction}
-        newTransactionType={newTransactionType}
-        setEditingTransaction={setEditingTransaction}
-        saveTransaction={saveTransaction}
-        startEdit={startEdit}
-        changeType={changeType}
-        deleteTransaction={(id) => { deleteTransaction(id); setMessage('Movimiento eliminado.'); }}
-        message={message}
-      />
-      <YearlyChart data={chartData} />
-      <section className="panel">
-        <div className="section-heading">
-          <div><h2>Asesor financiero</h2><p>Consulta el presupuesto y los movimientos del mes seleccionado con Ollama local.</p></div>
-          <button type="button" className="button button-primary" onClick={consultarAsesor} disabled={advisorLoading}>
-            {advisorLoading ? 'Analizando…' : 'Consultar a Ollama'}
-          </button>
-        </div>
-        {advisorResult && (
-          <div role="status">
-            <p>Análisis de {advisorResult.periodo}</p>
-            {advisorResult.resultado.error
-              ? <p className="form-error" role="alert">{advisorResult.resultado.error}</p>
-              : <pre>{JSON.stringify(advisorResult.resultado, null, 2)}</pre>}
-          </div>
-        )}
-      </section>
-    </main>
-  );
+ const { monthlyBudgets, template, transactions, ensureMonth, storageError } = useBudget();
+ const [params, setParams] = useSearchParams();
+ const requested = params.get('mes');
+ const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requested || '') ? requested : currentMonthKey();
+ const [settings, setSettings] = useState(readSettings);
+ const [plan, setPlan] = useState('estandar');
+ const [context, setContext] = useState('');
+ const [advice, setAdvice] = useState(null);
+ const [error, setError] = useState('');
+ const [loading, setLoading] = useState(false);
+ const controller = useRef(null);
+ useEffect(() => { ensureMonth(month); }, [month, ensureMonth]);
+ const budget = monthlyBudgets[month] || template || { incomes: [], expenses: [], savings: [] };
+ const signature = JSON.stringify({ month, budget, settings, plan });
+ useEffect(() => { return () => { controller.current?.abort(); controller.current = null; }; }, [signature]);
+ function clearAnalysis() { controller.current?.abort(); controller.current = null; setLoading(false); setAdvice(null); setError(''); }
+ const planned = totalsForBudget(budget);
+ const actualSavings = sumAmounts(transactions.filter(t => t.date?.slice(0,7) === month && t.type === 'saving'));
+ const savingsRate = planned.income > 0 ? planned.savings / planned.income * 100 : 0;
+ const chart = ['incomes','expenses','savings'].map((section, index) => ({ name: ['Ingresos','Gastos','Ahorro'][index], Planeado: sumAmounts(budget[section]) / 100, Real: sumAmounts(transactions.filter(t => t.date?.slice(0,7) === month && t.type === ['income','expense','saving'][index])) / 100 }));
+ function update(key, value) { clearAnalysis(); const next = { ...settings, [key]: value }; setSettings(next); try { localStorage.setItem('plaris-agent-goal', JSON.stringify(next)); } catch { setError('No fue posible guardar tu meta en este dispositivo.'); } }
+ async function ask(event) {
+  event.preventDefault();
+  const mapRows = rows => rows.filter(row => row.amountCents > 0).map(row => ({ id: row.id, name: row.name, amount: row.amountCents / 100, frequency: 'mensual', essential: row.essential !== false, category: row.category || row.name }));
+  const data = { startDate: month + '-01', incomes: mapRows(budget.incomes), expenses: mapRows(budget.expenses), debts: [], savings: Number(settings.savings || 0), reserve: Number(settings.reserve || 0), goal: { name: settings.name || '', cost: Number(settings.cost || 0), days: Number(settings.days || 90) }, context };
+  const analysis = analyze(data);
+  if (analysis.errors.length) { setError(analysis.errors.join(' ')); return; }
+  const active = new AbortController(); controller.current = active;
+  setLoading(true); setError(''); setAdvice(null);
+  const timeout = setTimeout(() => active.abort(), advicePlans[plan].timeoutMs);
+  try { const result = await requestAdvice(data, analysis, plan, active.signal); if (controller.current === active) setAdvice({ ...result, analysis }); }
+  catch (failure) { if (controller.current === active) setError(failure.name === 'AbortError' ? 'Se agot? el tiempo del an?lisis. Puedes volver a intentarlo.' : failure instanceof TypeError ? 'No se pudo conectar con Ollama. Comprueba que est? iniciado en localhost:11434.' : failure.message); }
+  finally { clearTimeout(timeout); if (controller.current === active) { setLoading(false); controller.current = null; } }
+ }
+ return <main className="agent-shell"><section className="agent-summary"><div className="agent-title"><span className="eyebrow">Tu espacio financiero</span><h1>Agente</h1></div><div className="agent-metrics"><Link to={'/presupuesto/incomes?mes='+month}><span>Ingresos</span><strong>{formatCurrency(planned.income)}</strong><ArrowUpRight size={17}/></Link><div><span>Balance</span><strong>{formatCurrency(planned.income-planned.expenses)}</strong></div><label className="period-control"><span>Periodo</span><input aria-label="Mes del presupuesto" type="month" value={month} onChange={e => { if(e.target.value) { clearAnalysis(); setParams({ mes: e.target.value }); } }}/></label><Link to={'/presupuesto/expenses?mes='+month}><span>Gastos</span><strong>{formatCurrency(planned.expenses)}</strong><ArrowUpRight size={17}/></Link><Link to={'/presupuesto/savings?mes='+month} className="saving-metric"><span>Ahorro ? planeado / real</span><strong>{formatCurrency(planned.savings)} / {formatCurrency(actualSavings)}</strong><ArrowUpRight size={17}/></Link></div></section>{storageError && <p role="alert">{storageError}</p>}<div className="agent-body"><aside className="agent-charts"><span className="eyebrow">El panorama de tu mes</span><h2>Cada peso cuenta.</h2><p>Tu presupuesto y tus movimientos, en perspectiva.</p><BudgetChart data={chart} dataKey="Planeado" title="Lo que planeas"/><BudgetChart data={chart} dataKey="Real" title="Lo que llevas"/><div className="rate-note"><strong>{savingsRate.toFixed(1)}%</strong><span>de tus ingresos destinado al ahorro</span></div><Link className="back-link" to="/movimientos">Registrar movimientos reales <ArrowUpRight size={16}/></Link></aside><section className="agent-workspace"><span className="eyebrow">Un plan empieza con una decisi?n</span><h2>?Por d?nde<br/>empezamos?</h2><p className="agent-subtitle">Dale un prop?sito a tu dinero. Plaris te ayuda a encontrar el camino.</p><form onSubmit={ask} className="agent-question"><label htmlFor="agent-context">?Qu? quieres lograr?</label><div className="question-input"><input id="agent-context" value={context} onChange={e=> { setContext(e.target.value); controller.current?.abort(); controller.current=null; setLoading(false); setAdvice(null); }} placeholder="Cu?ntale a Plaris qu? tienes en mente?"/><button type="submit" disabled={loading} aria-label="Generar asesor?a"><Send size={20}/></button></div><details className="goal-settings" open><summary><SlidersHorizontal size={16}/> Tu meta y tu punto de partida</summary><div className="goal-grid">{[['name','Nombre de la meta','text'],['cost','Costo de la meta (MXN)','number'],['days','Plazo (d?as)','number'],['savings','Ahorro actual (MXN)','number'],['reserve','Reserva protegida (MXN)','number']].map(([key,label,type])=><label className="field" key={key}><span>{label}</span><input type={type} min={key==='days'?1:0} step={key==='days'?1:'any'} value={settings[key] ?? (key==='days'?90:'')} onChange={e=>update(key,e.target.value)} required={['name','cost','days'].includes(key)}/></label>)}</div><p>Los ahorros son el saldo que ya tienes, no la aportaci?n planeada. Este an?lisis usa el presupuesto mensual; registra los pagos de tus deudas entre tus gastos.</p></details><div className="agent-submit"><label className="field"><span>Tipo de an?lisis</span><select value={plan} onChange={e=>{ clearAnalysis(); setPlan(e.target.value); }}><option value="estandar">Est?ndar</option><option value="avanzado">Avanzado</option></select></label><button className="button button-primary" disabled={loading}>{loading?'Analizando?':'Crear mi plan'}<ArrowUpRight size={17}/></button></div></form>{error && <p className="validation-box warning" role="alert">{error}</p>}{loading && <p role="status">Plaris est? preparando tu asesor?a con Ollama?</p>}{advice && <article className="advisor-answer" role="status"><span className="eyebrow">Tu plan ? {advicePlans[plan].label}</span><h3>{advice.analysis.risk}</h3><p>{advice.resumen}</p>{advice.ajustesPropuestos.length>0 && <><h4>Ajustes sugeridos</h4>{advice.ajustesPropuestos.map(item=><p key={item.gastoId}>{item.explicacion} ? {money(item.reduccionMensual)} al mes</p>)}</>}{advice.advertencias.map(item=><p key={item}>{item}</p>)}</article>}</section></div></main>;
 }
-
-function TransactionPanel({ month, transactions, categoriesFor, editingTransaction, newTransactionType, setEditingTransaction, saveTransaction, startEdit, changeType, deleteTransaction, message }) {
-  const today = getTodayKey();
-  const selected = editingTransaction || {
-    type: newTransactionType,
-    date: month === today.slice(0, 7) ? today : `${month}-01`,
-    category: '',
-  };
-  const categories = categoriesFor(selected.type);
-
-  return (
-    <section className="panel">
-      <div className="section-heading"><div><h2>Movimientos</h2><p>Agrega ingresos, gastos y aportaciones de ahorro.</p></div></div>
-      <form className="transaction-form" onSubmit={saveTransaction}>
-        <label className="field"><span>Tipo</span><select name="type" value={selected.type} onChange={(event) => changeType(event.target.value)}>{TRANSACTION_TYPES.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
-        <label className="field"><span>Categoría</span><input name="category" list="transaction-categories" defaultValue={selected.category} key={`${editingTransaction?.id || 'new'}-${selected.type}`} placeholder="Ej. Alimentación" required /><datalist id="transaction-categories">{categories.map((category) => <option key={category} value={category} />)}</datalist></label>
-        <label className="field"><span>Descripción</span><input name="description" defaultValue={selected.description || ''} key={`${editingTransaction?.id || 'new'}-description`} placeholder="Detalle (opcional)" /></label>
-        <label className="field"><span>Monto (MXN)</span><input name="amount" type="number" min="0.01" step="0.01" defaultValue={editingTransaction ? centsToInput(editingTransaction.amountCents) : ''} key={`${editingTransaction?.id || 'new'}-amount`} required /></label>
-        <label className="field"><span>Fecha</span><input name="date" type="date" defaultValue={selected.date || today} key={`${editingTransaction?.id || 'new'}-date`} required /></label>
-        <div className="form-buttons"><button className="button button-primary" type="submit">{editingTransaction ? <Check size={16} /> : <Plus size={16} />}{editingTransaction ? 'Guardar' : 'Agregar'}</button>{editingTransaction && <button className="button button-quiet" type="button" onClick={() => setEditingTransaction(null)}><X size={16} /> Cancelar</button>}</div>
-      </form>
-      {message && <p className={message.includes('debe') || message.includes('Completa') ? 'form-error' : 'form-success'} role="status">{message}</p>}
-      <div className="table-scroll">
-        <table>
-          <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Acciones</th></tr></thead>
-          <tbody>{transactions.slice().sort((a, b) => b.date.localeCompare(a.date)).map((item) => (
-            <tr key={item.id}><td>{new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX')}</td><td>{TRANSACTION_TYPES.find((type) => type.value === item.type)?.label}</td><td>{item.category}</td><td>{item.description || '—'}</td><td>{formatCurrency(item.amountCents)}</td><td><div className="table-actions"><button type="button" className="icon-button" aria-label="Editar movimiento" onClick={() => startEdit(item)}><Pencil size={16} /></button><button type="button" className="icon-button danger" aria-label="Eliminar movimiento" onClick={() => deleteTransaction(item.id)}><Trash2 size={16} /></button></div></td></tr>
-          ))}</tbody>
-        </table>
-        {transactions.length === 0 && <p className="empty-state">No hay movimientos registrados para este mes.</p>}
-      </div>
-    </section>
-  );
-}
-
-function YearlyChart({ data }) {
-  return (
-    <section className="panel chart-panel">
-      <div className="section-heading"><div><h2>Evolución anual</h2><p>Comparativo mensual de planeación y movimientos reales.</p></div></div>
-      <div className="chart-wrap">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(value) => `$${Math.round(value / 1000)}k`} tickLine={false} axisLine={false} width={48} />
-            <Tooltip formatter={(value) => formatCurrency(value)} />
-            <Legend />
-            <Bar dataKey="plannedIncome" name="Ingreso planeado" fill="#a7ded2" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="realIncome" name="Ingreso real" fill="#147b69" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="plannedExpense" name="Gasto planeado" fill="#f4c791" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="realExpense" name="Gasto real" fill="#d77b34" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="plannedSaving" name="Ahorro planeado" fill="#bdc8ea" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="realSaving" name="Ahorro real" fill="#657bb8" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
-  );
-}
-
-function makeYearData(selectedMonth, transactions, monthlyBudgets) {
-  const year = Number(selectedMonth.slice(0, 4));
-  return Array.from({ length: 12 }, (_, index) => {
-    const key = `${year}-${String(index + 1).padStart(2, '0')}`;
-    const budget = monthlyBudgets[key] || { incomes: [], expenses: [] };
-    const monthItems = transactions.filter((item) => item.date?.slice(0, 7) === key);
-    return {
-      month: new Date(year, index, 1).toLocaleDateString('es-MX', { month: 'short' }),
-      plannedIncome: sumAmounts(budget.incomes),
-      realIncome: sumAmounts(monthItems.filter((item) => item.type === 'income')),
-      plannedExpense: sumAmounts(budget.expenses),
-      realExpense: sumAmounts(monthItems.filter((item) => item.type === 'expense')),
-      plannedSaving: sumAmounts(budget.savings),
-      realSaving: sumAmounts(monthItems.filter((item) => item.type === 'saving')),
-    };
-  });
-}
-
-function getTodayKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+function BudgetChart({ data, dataKey, title }) { return <section className="mini-chart"><h3>{title}</h3><div style={{height:180,width:'100%'}}><ResponsiveContainer><BarChart data={data} margin={{left:0,right:8}}><CartesianGrid vertical={false} stroke="#e1e9e6"/><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize:11}}/><YAxis width={48} axisLine={false} tickLine={false} tick={{fontSize:10}} tickFormatter={v=>v>=1000?(v/1000)+'k':v}/><Tooltip formatter={v=>money(v)}/><Bar dataKey={dataKey} fill={dataKey==='Planeado'?'#2eb6aa':'#106057'} radius={[7,7,0,0]}/></BarChart></ResponsiveContainer></div>{data.every(item=>item[dataKey]===0) && <p className="chart-empty">{dataKey==='Real'?'Registra movimientos para ver tu avance.':'Agrega tu presupuesto para comenzar.'}</p>}</section>; }
