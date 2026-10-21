@@ -17,7 +17,6 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
 
   return (
     <section className="agent-workspace">
-      <span className="eyebrow">Un plan empieza con una decisión</span>
       <h2>
         ¿Por dónde
         <br />
@@ -32,32 +31,57 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
           Editar mi meta y mis datos <ArrowUpRight size={16} />
         </Link>
       </div>
+
       <form onSubmit={submit} className="agent-question">
-        <label htmlFor="agent-context">¿Qué quieres lograr?</label>
-        <textarea
-          id="agent-context"
-          value={context}
-          onChange={(event) => setContext(event.target.value)}
-          placeholder="Cuéntale a Plaris qué tienes en mente…"
-          disabled={loading}
-        />
-        <div className="agent-submit">
-          <label className="field">
-            <span>Tipo de análisis</span>
+        {/* Barra de chat tipo Gemini */}
+        <div className="chat-input-container">
+          <textarea
+            id="agent-context"
+            value={context}
+            onChange={(event) => setContext(event.target.value)}
+            placeholder="Cuéntale a Plaris qué tienes en mente…"
+            disabled={loading}
+            rows={1}
+          />
+          <div className="chat-controls-inline">
             <select
               value={plan}
               onChange={(event) => setPlan(event.target.value)}
               disabled={loading}
+              aria-label="Tipo de análisis"
+              className="chat-plan-select"
             >
               <option value="estandar">Estándar</option>
               <option value="avanzado">Avanzado</option>
             </select>
-          </label>
-          <button className="button button-primary" disabled={loading}>
-            {loading ? 'Analizando…' : 'Crear mi plan'} <ArrowUpRight size={17} />
-          </button>
+            <button
+              type="submit"
+              className="chat-send-button"
+              disabled={loading}
+              aria-label="Crear mi plan"
+            >
+              <ArrowUpRight size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Botones inferiores de acciones rápidas totalmente centrados */}
+        <div className="agent-quick-actions">
+          <Link to={'/dashboard?mes=' + month} className="pill-button">
+            <span>Φ</span> Agente
+          </Link>
+          <Link to={'/perfil/resumen?mes=' + month} className="pill-button">
+            <span>✏️</span> Agendar
+          </Link>
+          <Link to={'/analisis?mes=' + month} className="pill-button">
+            <span>📄</span> Historial
+          </Link>
+          <Link to={'/perfil?mes=' + month} className="pill-button">
+            <span>🗂️</span> Mis datos
+          </Link>
         </div>
       </form>
+
       {error && (
         <p role="alert" className="validation-box warning">
           {error}

@@ -7,15 +7,16 @@ import MonthPicker from '../common/MonthPicker';
 export default function AgentSummary({ month, changeMonth, budget, debts, totals }) {
   const payment = debts.reduce((sum, debt) => sum + debt.payment * 100, 0);
   return (
-    <section className="agent-summary">
-      <div className="agent-title">
-        <span className="eyebrow">Tu espacio financiero</span>
-        <h1>Agente</h1>
-      </div>
-      <div className="agent-metrics">
+    <section className="agent-summary-compact">
+      {/* Etiqueta animada con la palabra AGENTE que entra y sale deslizándose 
+      <div className="agent-title-animated">
+        <span className="sliding-title">AGENTE</span>
+      </div>*/}
+
+      <div className="agent-metrics-full">
         {financeSections.map((section) => (
           <Link key={section.key} to={profileLink(section.key, month)}>
-            <span>{section.label}</span>
+            <span>{section.label}:</span>
             <strong>
               {formatCurrency(
                 section.key === 'debts'
@@ -23,16 +24,18 @@ export default function AgentSummary({ month, changeMonth, budget, debts, totals
                   : sumAmounts(budget[section.key]),
               )}
             </strong>
-            <ArrowUpRight size={17} />
+            <ArrowUpRight size={15} />
           </Link>
         ))}
         <div>
-          <span>Disponible tras ahorro y deudas</span>
+          <span>Disponible:</span>
           <strong>
             {formatCurrency(totals.income - totals.expenses - totals.savings - payment)}
           </strong>
         </div>
-        <MonthPicker month={month} onChange={changeMonth} />
+        <div className="month-picker-wrap">
+          <MonthPicker month={month} onChange={changeMonth} />
+        </div>
       </div>
     </section>
   );
