@@ -1,10 +1,23 @@
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useMonthBudget } from '../../hooks/useMonthBudget';
 
-export default function TemplateSidebar({ onNavigate }) {
+export default function TemplateSidebar({ onNavigate, isOpen }) {
   const { savedTemplates, profile, month } = useMonthBudget();
+  
+  const animationConfig = {
+    duration: 0.3,
+    ease: [0.4, 0, 0.2, 1]
+  };
+
   return (
-    <aside className="template-sidebar" id="template-sidebar">
+    <motion.aside 
+      className="template-sidebar" 
+      id="template-sidebar"
+      initial={false}
+      animate={{ x: isOpen ? 0 : "-100%" }}
+      transition={animationConfig}
+    >
       <span className="eyebrow">Tu biblioteca</span>
       <h2>Plantillas</h2>
       <Link className="button button-primary" to={'/plantillas?mes=' + month} onClick={onNavigate}>
@@ -27,6 +40,6 @@ export default function TemplateSidebar({ onNavigate }) {
       <Link className="sidebar-profile" to="/perfil/resumen" onClick={onNavigate}>
         {profile.displayName || 'Mi perfil'}
       </Link>
-    </aside>
+    </motion.aside>
   );
 }
