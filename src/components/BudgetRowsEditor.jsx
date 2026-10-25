@@ -2,7 +2,7 @@ import MoneyInput from './common/MoneyInput';
 import { Plus, Trash2 } from 'lucide-react';
 import { createId, formatCurrency, sumAmounts } from '../services/budgetService';
 
-export default function BudgetRowsEditor({ section, rows, onChange, label, showCategory = false }) {
+export default function BudgetRowsEditor({ section, rows, onChange, label }) {
   function updateRow(id, key, value) {
     onChange(
       rows.map((row) =>
@@ -34,7 +34,7 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
       </div>
       <div className="budget-rows">
         {rows.map((row) => (
-          <div className={`budget-row${showCategory ? ' with-category' : ''}`} key={row.id}>
+          <div className="budget-row" key={row.id}>
             <label className="field">
               <span>{section === 'incomes' ? 'Fuente de ingreso' : 'Categoría u objetivo'}</span>
               <input
@@ -44,16 +44,6 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
                 aria-label={`${label}: nombre`}
               />
             </label>
-            {showCategory && (
-              <label className="field">
-                <span>Categoría</span>
-                <input
-                  value={row.category}
-                  onChange={(event) => updateRow(row.id, 'category', event.target.value)}
-                  placeholder="Ej. Trabajo"
-                />
-              </label>
-            )}
             <label className="field">
               <span>Monto mensual (MXN)</span>
               <MoneyInput

@@ -163,3 +163,49 @@ fieldset {
   display: block;
   margin: 15px 0;
 }
+.goal-list {
+  display: grid;
+  gap: 12px;
+}
+.goal-editor-row {
+  display: grid;
+  grid-template-columns: auto auto repeat(4, minmax(130px, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d2e2db;
+  border-radius: 7px;
+  background: #fbfdfb;
+}
+.goal-rank {
+  align-self: center;
+  font-weight: 700;
+  color: #105f56;
+}
+.drag-icon {
+  align-self: center;
+  color: #71958b;
+  cursor: grab;
+}
+.goal-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.guided-note {
+  margin: 16px 0 0;
+  color: #627e72;
+  font-size: 0.85rem;
+}
+@media (max-width: 850px) {
+  .goal-editor-row {
+    grid-template-columns: auto auto 1fr;
+  }
+  .goal-editor-row .field {
+    grid-column: span 1;
+  }
+  .goal-row-actions {
+    grid-column: 3;
+    justify-content: flex-end;
+  }
+}

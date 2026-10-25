@@ -37,6 +37,20 @@ export function toPlannerData(budget, profile, debts, month, context = '') {
     debts,
     savings: Number(profile.savings || 0),
     reserve: Number(profile.reserve || 0),
+    plannedSavings: sumAmounts(budget.savings) / 100,
+    goals: (budget.goals || []).map((goal, priority) => ({
+      id: goal.id,
+      name: goal.name,
+      target: Number(goal.targetCents || 0) / 100,
+      monthlyAmount: Number(goal.monthlyAmountCents || 0) / 100,
+      targetDate: goal.targetDate || null,
+      priority: priority + 1,
+    })),
+    emergencyFund: {
+      targetMonths: Number(budget.emergencyFund?.targetMonths || 3),
+      currentAmount: Number(budget.emergencyFund?.currentAmountCents || 0) / 100,
+      monthlyAmount: Number(budget.emergencyFund?.monthlyAmountCents || 0) / 100,
+    },
     goal: {
       name: profile.goalName || '',
       cost: Number(profile.cost || 0),
@@ -61,6 +75,20 @@ export function selectedFinanceContext(budget, debts, comparison, sections, mont
         totales: comparison.find((item) => item.key === key),
       };
     }
+  }
+  if (sections.includes('savings')) {
+    context.secciones.metas = (budget.goals || []).map((goal, index) => ({
+      prioridad: index + 1,
+      nombre: goal.name,
+      costo: goal.targetCents / 100,
+      aportacionMensual: goal.monthlyAmountCents / 100,
+      fechaObjetivo: goal.targetDate || null,
+    }));
+    context.secciones.fondoEmergencia = {
+      mesesObjetivo: budget.emergencyFund?.targetMonths || 3,
+      montoActual: (budget.emergencyFund?.currentAmountCents || 0) / 100,
+      aportacionMensual: (budget.emergencyFund?.monthlyAmountCents || 0) / 100,
+    };
   }
   return context;
 }

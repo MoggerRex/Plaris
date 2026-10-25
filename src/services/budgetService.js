@@ -37,10 +37,16 @@ export function sumAmounts(items = []) {
 }
 
 export function totalsForBudget(budget = {}) {
+  const goals = sumAmounts(
+    (budget.goals || []).map((goal) => ({ amountCents: goal.monthlyAmountCents })),
+  );
+  const emergency = Number(budget.emergencyFund?.monthlyAmountCents) || 0;
   return {
     income: sumAmounts(budget.incomes),
     expenses: sumAmounts(budget.expenses),
-    savings: sumAmounts(budget.savings),
+    savings: sumAmounts(budget.savings) + goals + emergency,
+    goalSavings: goals,
+    emergencySavings: emergency,
   };
 }
 
@@ -74,6 +80,7 @@ export function validateZeroBasedBudget(budget) {
     ['ingresos', budget.incomes || []],
     ['gastos', budget.expenses || []],
     ['ahorros', budget.savings || []],
+    ['metas', budget.goals || []],
   ];
 
   if (!budget.incomes?.some((item) => item.name.trim() && item.amountCents > 0)) {
@@ -95,7 +102,11 @@ export function validateZeroBasedBudget(budget) {
 }
 
 export function emptyBudget() {
-  return { incomes: [], expenses: [], savings: [] };
+  return { incomes: [], expenses: [], savings: [], goals: [], emergencyFund: defaultEmergencyFund() };
+}
+
+export function defaultEmergencyFund() {
+  return { targetMonths: 3, currentAmountCents: 0, monthlyAmountCents: 0 };
 }
 
 export function createInitialBudgetState() {
@@ -109,6 +120,8 @@ export function createInitialBudgetState() {
         ),
       ],
       savings: [{ id: createId(), name: '', category: 'Ahorro', amountCents: 0 }],
+      goals: [],
+      emergencyFund: defaultEmergencyFund(),
     },
     profile: { displayName: '', goalName: '', cost: '', days: 90, savings: '', reserve: '' },
     savedTemplates: [],
@@ -122,12 +135,16 @@ export function createInitialBudgetState() {
 }
 
 export function cloneBudget(budget = emptyBudget()) {
-  return Object.fromEntries(
-    ['incomes', 'expenses', 'savings'].map((key) => [
+  return {
+    ...Object.fromEntries(
+      ['incomes', 'expenses', 'savings'].map((key) => [
       key,
       (budget[key] || []).map((item) => ({ ...item, id: createId() })),
-    ]),
-  );
+      ]),
+    ),
+    goals: (budget.goals || []).map((goal) => ({ ...goal, id: createId() })),
+    emergencyFund: { ...defaultEmergencyFund(), ...(budget.emergencyFund || {}) },
+  };
 }
 
 export function readBudgetState() {
@@ -166,7 +183,12 @@ export function readBudgetState() {
       },
       savedTemplates: Array.isArray(parsed.savedTemplates) ? parsed.savedTemplates : [],
       analysisHistory: Array.isArray(parsed.analysisHistory) ? parsed.analysisHistory : [],
-      draft: { ...initial.draft, ...parsed.draft },
+      draft: {
+        ...initial.draft,
+        ...parsed.draft,
+        emergencyFund: { ...initial.draft.emergencyFund, ...(parsed.draft?.emergencyFund || {}) },
+        goals: Array.isArray(parsed.draft?.goals) ? parsed.draft.goals : initial.draft.goals,
+      },
       monthlyBudgets: parsed.monthlyBudgets || {},
       transactions: parsed.transactions || [],
     };

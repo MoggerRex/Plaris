@@ -1,6 +1,9 @@
-import { ArrowLeft, ArrowRight, Check, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CircleHelp, Wallet } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import BudgetRowsEditor from '../../components/BudgetRowsEditor';
+import GoalsEmergencyEditor from '../../components/onboarding/GoalsEmergencyEditor';
+import OnboardingReport from '../../components/onboarding/OnboardingReport';
 import { useBudget } from '../../context/useBudget';
 import {
   applySurplusAllocation,
@@ -9,6 +12,11 @@ import {
   unassignedAmount,
   validateZeroBasedBudget,
 } from '../../services/budgetService';
+import {
+  analyzeOnboardingBudget,
+  applyOnboardingRecommendations,
+  projectionRows,
+} from '../../services/onboardingAdvice';
 
 const steps = [
   {
@@ -30,6 +38,18 @@ const steps = [
     description: 'Define tus objetivos de ahorro mensual.',
   },
   {
+    slug: 'metas',
+    title: 'Metas financieras',
+    section: 'goals',
+    description: 'Define qué quieres alcanzar y en qué orden de prioridad.',
+  },
+  {
+    slug: 'emergencia',
+    title: 'Fondo de emergencia',
+    section: 'emergencyFund',
+    description: 'Construye una reserva para imprevistos.',
+  },
+  {
     slug: 'revision',
     title: 'Revisión',
     section: null,
@@ -41,11 +61,19 @@ export default function Onboarding() {
   const { step: routeStep = 'ingresos' } = useParams();
   const navigate = useNavigate();
   const { onboardingComplete, draft, updateDraft, completeOnboarding, storageError } = useBudget();
+  const [showGuide, setShowGuide] = useState(true);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
+  const [recommendationsApplied, setRecommendationsApplied] = useState(false);
   const index = steps.findIndex((step) => step.slug === routeStep);
   const activeIndex = index < 0 ? 0 : index;
   const step = steps[activeIndex];
   const rawPending = unassignedAmount(draft);
-  const allocatedDraft = applySurplusAllocation(draft, draft.surplusAllocation);
+  const allocatedDraft = useMemo(
+    () => applySurplusAllocation(draft, draft.surplusAllocation),
+    [draft],
+  );
   const validation = validateZeroBasedBudget(allocatedDraft);
   const needsSurplusChoice = rawPending > 0 && !draft.surplusAllocation;
   const validationErrors = [
@@ -55,6 +83,28 @@ export default function Onboarding() {
       : []),
   ];
   const stepError = getStepError(step, draft);
+
+  useEffect(() => {
+    if (step.slug !== 'revision') return undefined;
+    let cancelled = false;
+    async function runAnalysis() {
+      await Promise.resolve();
+      if (cancelled) return;
+      setAnalysisLoading(true);
+      setAnalysisError('');
+      setRecommendationsApplied(false);
+      try {
+        const result = await analyzeOnboardingBudget(allocatedDraft);
+        if (!cancelled) setAnalysisResult({ ...result, projection: projectionRows(result.analysis) });
+      } catch (error) {
+        if (!cancelled) setAnalysisError(error.message || 'No se pudo preparar el reporte.');
+      } finally {
+        if (!cancelled) setAnalysisLoading(false);
+      }
+    }
+    runAnalysis();
+    return () => { cancelled = true; };
+  }, [step.slug, allocatedDraft]);
 
   if (onboardingComplete) return <Navigate to="/dashboard" replace />;
   if (index < 0) return <Navigate to="/onboarding/ingresos" replace />;
@@ -66,6 +116,20 @@ export default function Onboarding() {
   function next() {
     if (stepError) return;
     goToStep(activeIndex + 1);
+  }
+
+  function updateSection(section, value) {
+    setShowGuide(false);
+    updateDraft(section, value);
+  }
+
+  function applyRecommendations() {
+    if (!analysisResult) return;
+    const adjusted = applyOnboardingRecommendations(draft, analysisResult);
+    updateDraft('expenses', adjusted.expenses);
+    updateDraft('goals', adjusted.goals);
+    updateDraft('emergencyFund', adjusted.emergencyFund);
+    setRecommendationsApplied(true);
   }
 
   function finish() {
@@ -81,8 +145,12 @@ export default function Onboarding() {
           <Wallet size={15} /> Tu punto de partida
         </span>
         <h1>Construye un presupuesto que sí cierre</h1>
-        <p>Cuatro pasos para repartir tu ingreso mensual con intención.</p>
+        <p>
+          Un presupuesto es un plan para decidir a dónde va tu dinero antes de gastarlo. Lo
+          componen tus ingresos, tus gastos, tus ahorros y las metas que quieres alcanzar.
+        </p>
       </div>
+      <BalanceBar budget={allocatedDraft} />
       <div className="progress-wrap" aria-label={`Paso ${activeIndex + 1} de ${steps.length}`}>
         <div className="progress-meta">
           <span>
@@ -109,14 +177,23 @@ export default function Onboarding() {
       </div>
 
       {step.section ? (
-        <BudgetRowsEditor
-          label={step.title}
-          section={step.section}
-          rows={draft[step.section]}
-          onChange={(rows) => updateDraft(step.section, rows)}
-          showCategory={step.section === 'incomes'}
-        />
+        step.section === 'goals' || step.section === 'emergencyFund' ? (
+          <GoalsEmergencyEditor
+            goals={draft.goals}
+            emergencyFund={draft.emergencyFund}
+            onGoalsChange={(value) => updateSection('goals', value)}
+            onEmergencyChange={(value) => updateSection('emergencyFund', value)}
+          />
+        ) : (
+          <BudgetRowsEditor
+            label={step.title}
+            section={step.section}
+            rows={draft[step.section]}
+            onChange={(rows) => updateSection(step.section, rows)}
+          />
+        )
       ) : (
+        <>
         <section className="panel">
           <div className="section-heading">
             <div>
@@ -188,6 +265,14 @@ export default function Onboarding() {
             al centavo.
           </p>
         </section>
+        {analysisLoading && <section className="panel report-loading" role="status">Plaris está preparando tu reporte y tus proyecciones...</section>}
+        {analysisError && <div className="validation-box warning" role="alert">{analysisError}</div>}
+        <OnboardingReport
+          result={analysisResult}
+          applied={recommendationsApplied}
+          onApply={applyRecommendations}
+        />
+        </>
       )}
 
       {storageError && (
@@ -229,7 +314,59 @@ export default function Onboarding() {
           </button>
         )}
       </div>
+      <GuideOverlay
+        step={step}
+        visible={showGuide}
+        onDismiss={() => setShowGuide(false)}
+        onShow={() => setShowGuide(true)}
+      />
     </main>
+  );
+}
+
+function BalanceBar({ budget }) {
+  const totals = validationTotals(budget);
+  return (
+    <aside className="onboarding-balance" aria-label="Balance mensual actual">
+      <span>Balance mensual</span>
+      <strong>{formatCurrency(totals.income - totals.expenses - totals.savings)}</strong>
+      <small>
+        Ingresos {formatCurrency(totals.income)} · asignado {formatCurrency(totals.expenses + totals.savings)}
+      </small>
+    </aside>
+  );
+}
+
+function validationTotals(budget) {
+  return {
+    income: sumAmounts(budget.incomes),
+    expenses: sumAmounts(budget.expenses),
+    savings:
+      sumAmounts(budget.savings) +
+      sumAmounts((budget.goals || []).map((goal) => ({ amountCents: goal.monthlyAmountCents }))) +
+      Number(budget.emergencyFund?.monthlyAmountCents || 0),
+  };
+}
+
+function GuideOverlay({ step, visible, onDismiss, onShow }) {
+  return (
+    <>
+      {!visible && (
+        <button type="button" className="guide-reopen" onClick={onShow}>
+          <CircleHelp size={16} /> Ver explicación
+        </button>
+      )}
+      {visible && (
+        <div className="guided-overlay" role="status">
+          <div className="guided-tooltip">
+            <span className="eyebrow">Paso guiado</span>
+            <strong>{step.title}</strong>
+            <p>{step.description}</p>
+            <button type="button" className="button button-secondary" onClick={onDismiss}>Entendido</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -252,6 +389,12 @@ function getStepError(step, draft) {
       : '';
   }
   if (step.section) {
+    if (step.section === 'goals') {
+      return draft.goals.some((goal) => (goal.targetCents > 0 || goal.monthlyAmountCents > 0) && !goal.name.trim())
+        ? 'Completa el nombre de cada meta que tenga un monto.'
+        : '';
+    }
+    if (step.section === 'emergencyFund') return '';
     return draft[step.section].some((item) => item.amountCents > 0 && !item.name.trim())
       ? 'Completa el nombre de cada categoría u objetivo con monto.'
       : '';

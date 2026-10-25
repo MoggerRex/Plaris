@@ -5,6 +5,7 @@ import { analyze } from '../src/domain/planner.js';
 import { snapshotTemplate, applyTemplate } from '../src/services/templateService.js';
 import { readBudgetState, writeBudgetState } from '../src/services/budgetService.js';
 import { requestChat } from '../src/services/chatService.js';
+import { applyOnboardingRecommendations, buildLocalAnalysis } from '../src/services/onboardingAdvice.js';
 
 const budget = {
   incomes: [{ id: 'income', name: 'Sueldo', category: 'Trabajo', amountCents: 3000000 }],
@@ -89,4 +90,36 @@ test('chat sends selected context and bounded history with a cancellation signal
     assert.match(request.body.messages[0].content, /expenses/);
     assert.equal(request.body.stream, false);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('onboarding projections include goals and emergency contributions', () => {
+  const onboardingBudget = {
+    incomes: [{ amountCents: 3000000 }],
+    expenses: [{ amountCents: 1500000, essential: true }],
+    savings: [],
+    goals: [{ id: 'goal', name: 'Viaje', targetCents: 600000, monthlyAmountCents: 100000 }],
+    emergencyFund: { targetMonths: 3, currentAmountCents: 0, monthlyAmountCents: 200000 },
+  };
+  const result = buildLocalAnalysis(onboardingBudget);
+  assert.equal(result.goals[0].months, 6);
+  assert.equal(result.emergency.targetCents, 4500000);
+  assert.equal(result.available, 1200000);
+});
+
+test('onboarding recommendations never over-allocate the monthly income', () => {
+  const onboardingBudget = {
+    incomes: [{ amountCents: 1000000 }],
+    expenses: [{ id: 'rent', amountCents: 600000, essential: true }],
+    savings: [],
+    goals: [{ id: 'goal', name: 'Viaje', targetCents: 500000, monthlyAmountCents: 100000 }],
+    emergencyFund: { targetMonths: 3, currentAmountCents: 0, monthlyAmountCents: 100000 },
+  };
+  const adjusted = applyOnboardingRecommendations(onboardingBudget, {
+    ajustes: {
+      aportacionesMetas: [{ id: 'goal', monthlyAmountCents: 900000 }],
+      emergencyMonthlyAmountCents: 900000,
+    },
+  });
+  const assigned = adjusted.expenses[0].amountCents + adjusted.goals[0].monthlyAmountCents + adjusted.emergencyFund.monthlyAmountCents;
+  assert.ok(assigned <= onboardingBudget.incomes[0].amountCents);
 });
