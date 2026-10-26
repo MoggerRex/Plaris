@@ -1,4 +1,6 @@
 .app-layout {
+  --budget-deep: #123e34;
+  --budget-soft: #e1ead5;
   width: 100%;
   min-height: 100dvh;
 }
@@ -8,8 +10,9 @@
   flex-wrap: wrap;
   width: 100%;
   min-height: 78px;
-  background: #2eb6aa;
-  border-bottom: 2px solid #12675e;
+  background: var(--budget-deep);
+  border-bottom: 2px solid #b9c8a4;
+  color: #f5f7ee;
 }
 .brand {
   display: flex;
@@ -18,7 +21,7 @@
   padding: 10px 20px;
   font-family: Georgia, serif;
   font-size: 2.4rem;
-  border-right: 1px solid #19776c;
+  border-right: 1px solid #3b6053;
 }
 .brand span {
   font-size: 1.7rem;
@@ -46,8 +49,8 @@
   font-size: 0.8rem;
 }
 .app-header nav a.active {
-  background: #105f56;
-  color: #d8f3eb;
+  background: var(--budget-soft);
+  color: var(--budget-deep);
 }
 .app-header svg {
   width: 23px;
