@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { financeSections } from '../config/financeSections';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { selectedFinanceContext } from '../services/financeAdapter';
-import PageHeading from '../components/common/PageHeading';
-import MonthPicker from '../components/common/MonthPicker';
+import AgentSummary from '../components/agent/AgentSummary';
 import VisualizationPanel from '../components/finance/VisualizationPanel';
 import FinanceChat from '../components/analysis/FinanceChat';
-import AnalysisHistory from '../components/analysis/AnalysisHistory';
 
 export default function Analysis() {
   const state = useMonthBudget();
@@ -27,48 +25,59 @@ export default function Analysis() {
   }
 
   return (
-    <main className="page-shell">
-      <PageHeading title="Análisis gráfico">
-        <MonthPicker month={state.month} onChange={state.changeMonth} />
-      </PageHeading>
-      <AnalysisHistory records={state.analysisHistory} />
-      <div className="analysis-layout">
-        <section>
-          <fieldset className="section-selector">
-            <legend>Datos que recibirá Plaris</legend>
-            {financeSections.map((item) => (
-              <label key={item.key}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(item.key)}
-                  onChange={() => toggle(item.key)}
-                />{' '}
-                {item.label}
-              </label>
-            ))}
-          </fieldset>
-          <div className="section-tabs" role="group" aria-label="Vista de los datos seleccionados">
-            <button aria-pressed={mode === 'tablas'} onClick={() => setMode('tablas')}>
-              Tablas
-            </button>
-            <button aria-pressed={mode === 'graficas'} onClick={() => setMode('graficas')}>
-              Gráficas
-            </button>
-          </div>
-          <VisualizationPanel
-            mode={mode}
-            budget={state.budget}
-            debts={state.deudas_activas}
-            comparison={state.comparison}
-            sections={selected}
+    <main>
+      {/* Misma barra de métricas y selector de mes que la pantalla del agente */}
+      <AgentSummary
+        month={state.month}
+        changeMonth={state.changeMonth}
+        budget={state.budget}
+        debts={state.deudas_activas}
+        totals={state.totals}
+      />
+
+      <div className="page-shell">
+        <div className="analysis-layout">
+          <section>
+            <fieldset className="section-selector">
+              <legend>Datos que recibirá Plaris</legend>
+              {financeSections.map((item) => (
+                <label key={item.key}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(item.key)}
+                    onChange={() => toggle(item.key)}
+                  />{' '}
+                  {item.label}
+                </label>
+              ))}
+            </fieldset>
+            <div
+              className="section-tabs"
+              role="group"
+              aria-label="Vista de los datos seleccionados"
+            >
+              <button aria-pressed={mode === 'tablas'} onClick={() => setMode('tablas')}>
+                Tablas
+              </button>
+              <button aria-pressed={mode === 'graficas'} onClick={() => setMode('graficas')}>
+                Gráficas
+              </button>
+            </div>
+            <VisualizationPanel
+              mode={mode}
+              budget={state.budget}
+              debts={state.deudas_activas}
+              comparison={state.comparison}
+              sections={selected}
+            />
+          </section>
+          <FinanceChat
+            key={JSON.stringify(context)}
+            context={context}
+            disabled={!selected.length}
+            onSave={state.saveAnalysis}
           />
-        </section>
-        <FinanceChat
-          key={JSON.stringify(context)}
-          context={context}
-          disabled={!selected.length}
-          onSave={state.saveAnalysis}
-        />
+        </div>
       </div>
     </main>
   );

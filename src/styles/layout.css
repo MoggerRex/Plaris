@@ -282,3 +282,75 @@
 .sidebar-action-button:hover {
   background: rgba(16, 95, 86, 0.1);
 }
+
+/* ---------- Análisis guardados (menú lateral) ---------- */
+.sidebar-history {
+  display: flex;
+  flex-direction: column;
+}
+
+/* El botón principal usa el estilo de pastilla; se quita el triángulo por defecto */
+.sidebar-history > summary {
+  list-style: none;
+}
+
+.sidebar-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-history .history-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-history[open] > summary .history-chevron {
+  transform: rotate(180deg);
+}
+
+/* Lista desplegada, con una guía a la izquierda */
+.sidebar-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 4px 0 0 20px;
+  padding-left: 10px;
+  border-left: 2px solid #b9d9d1;
+}
+
+.sidebar-history-item > summary {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  list-style: none;
+  transition: background 0.2s ease;
+}
+
+.sidebar-history-item > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-history-item > summary:hover,
+.sidebar-history-item[open] > summary {
+  background: rgba(16, 95, 86, 0.1);
+}
+
+.sidebar-history .history-message {
+  padding: 6px 12px;
+}
+
+.sidebar-history .history-message strong {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #568b81;
+}
+
+.sidebar-history .history-message p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}

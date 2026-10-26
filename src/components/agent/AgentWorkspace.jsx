@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Pencil, FileClock, FolderUser } from 'lucide-react';
+import { ArrowUpRight, Pencil, FileClock, FolderUser, CornerDownLeft } from 'lucide-react';
 import { useAdvice } from '../../hooks/useAdvice';
 import { toPlannerData } from '../../services/financeAdapter';
 import AdviceResult from './AdviceResult';
@@ -60,7 +60,7 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
               disabled={loading}
               aria-label="Crear mi plan"
             >
-              <ArrowUpRight size={18} />
+              <CornerDownLeft size={18} />
             </button>
           </div>
         </div>

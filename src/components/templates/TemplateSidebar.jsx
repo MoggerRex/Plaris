@@ -2,9 +2,10 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useMonthBudget } from '../../hooks/useMonthBudget';
 import { SquarePen, TextSearch, PanelLeftClose } from 'lucide-react';
+import AnalysisHistory from '../analysis/AnalysisHistory';
 
 export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
-  const { savedTemplates, profile, month } = useMonthBudget();
+  const { savedTemplates, profile, month, analysisHistory } = useMonthBudget();
 
   const animationConfig = {
     duration: 0.3,
@@ -45,6 +46,12 @@ export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
           Análisis de tus datos
         </Link>
       </section>
+
+      {/* Análisis guardados */}
+<section className="sidebar-section" aria-labelledby="sidebar-analisis">
+  <span className="eyebrow" id="sidebar-analisis">Análisis guardados</span>
+  <AnalysisHistory records={analysisHistory} />
+</section>
 
       {/* SECCIÓN 2: Plantillas guardadas */}
       <section className="sidebar-section" aria-labelledby="sidebar-plantillas">
