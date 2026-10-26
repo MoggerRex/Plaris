@@ -1,7 +1,6 @@
 import { Navigate, NavLink, useParams } from 'react-router-dom';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { financeSections, profileLink } from '../config/financeSections';
-import PageHeading from '../components/common/PageHeading';
 import ProfileDetailsForm from '../components/profile/ProfileDetailsForm';
 import FinancialSectionForm from '../components/profile/FinancialSectionForm';
 

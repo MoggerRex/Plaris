@@ -2,12 +2,28 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { financeSections } from '../config/financeSections';
-import PageHeading from '../components/common/PageHeading';
 import VisualizationPanel from '../components/finance/VisualizationPanel';
+
+import AnnualAnalytics from '../components/finance/AnnualAnalytics';
 
 export default function Charts() {
   const state = useMonthBudget();
   const [mode, setMode] = useState('graficas');
+  const information = (
+    <div className="panel">
+      <h2>¿Qué estás viendo?</h2>
+      <p>
+        <strong>Planeado:</strong> los ingresos, gastos y aportaciones de ahorro que guardaste en tu
+        perfil para este mes. <strong>Real:</strong> los movimientos que registraste con fecha en
+        este mes.
+      </p>
+      <p>
+        La gráfica de barras compara ambos. Las gráficas circulares de ingresos, gastos y ahorros
+        muestran la distribución planeada del perfil; la de deudas muestra el saldo registrado. Si
+        no has registrado movimientos, Real aparece en cero.
+      </p>
+    </div>
+  );
   return (
     <main className="page-shell">
       <div className="section-toolbar">
@@ -26,26 +42,35 @@ export default function Charts() {
           Registrar movimientos
         </Link>
       </div>
-      <div className="panel">
-        <h2>¿Qué estás viendo?</h2>
-        <p>
-          <strong>Planeado:</strong> los ingresos, gastos y aportaciones de ahorro que guardaste en
-          tu perfil para este mes. <strong>Real:</strong> los movimientos que registraste con fecha
-          en este mes.
-        </p>
-        <p>
-          La gráfica de barras compara ambos. Las gráficas circulares de ingresos, gastos y ahorros
-          muestran la distribución planeada del perfil; la de deudas muestra el saldo registrado. Si
-          no has registrado movimientos, Real aparece en cero.
-        </p>
-      </div>
-      <VisualizationPanel
-        mode={mode}
-        budget={state.budget}
-        debts={state.deudas_activas}
-        comparison={state.comparison}
-        sections={financeSections.map((item) => item.key)}
-      />
+      {mode === 'graficas' ? (
+        <AnnualAnalytics
+          month={state.month}
+          transactions={state.transactions}
+          monthlyBudgets={state.monthlyBudgets}
+          openingFunds={state.openingFunds}
+          debts={state.deudas_activas}
+          information={information}
+        >
+          <VisualizationPanel
+            mode="graficas"
+            budget={state.budget}
+            debts={state.deudas_activas}
+            comparison={state.comparison}
+            sections={financeSections.map((item) => item.key)}
+          />
+        </AnnualAnalytics>
+      ) : (
+        <>
+          {information}
+          <VisualizationPanel
+            mode="tablas"
+            budget={state.budget}
+            debts={state.deudas_activas}
+            comparison={state.comparison}
+            sections={financeSections.map((item) => item.key)}
+          />
+        </>
+      )}
     </main>
   );
 }
