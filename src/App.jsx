@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -53,33 +53,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <BudgetProvider>
-        <Suspense
-          fallback={
-            <main className="page-shell">
-              <p>Cargando Plaris…</p>
-            </main>
-          }
-        >
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route element={<OnboardingOnly />}>
-                <Route path="/onboarding/:step?" element={<Onboarding />} />
-              </Route>
-              <Route element={<CompletedOnboarding />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/perfil/:section?" element={<ProfileRoute />} />
-                <Route path="/graficas" element={<Charts />} />
-                <Route path="/analisis" element={<Analysis />} />
-                <Route path="/guia" element={<Guide />} />
-                <Route path="/plantillas" element={<Templates />} />
-                <Route path="/movimientos" element={<Movimientos />} />
-                <Route path="/presupuesto/:section?" element={<Budget />} />
-              </Route>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route element={<OnboardingOnly />}>
+              <Route path="/onboarding/:step?" element={<Onboarding />} />
             </Route>
-            <Route path="/" element={<Navigate to="/onboarding/intro" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Suspense>
+            <Route element={<CompletedOnboarding />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/perfil/:section?" element={<ProfileRoute />} />
+              <Route path="/graficas" element={<Charts />} />
+              <Route path="/analisis" element={<Analysis />} />
+              <Route path="/guia" element={<Guide />} />
+              <Route path="/plantillas" element={<Templates />} />
+              <Route path="/movimientos" element={<Movimientos />} />
+              <Route path="/presupuesto/:section?" element={<Budget />} />
+            </Route>
+          </Route>
+          <Route path="/" element={<Navigate to="/onboarding/intro" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </BudgetProvider>
     </BrowserRouter>
   );

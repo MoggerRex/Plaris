@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Plaris</title>
+  <g fill="#105f56">
+    <path fill-rule="evenodd" d="M32 14C16 14 10 22 10 32s6 18 22 18 22-8 22-18-6-18-22-18Zm0 3c-11 0-15 6-15 15s4 15 15 15 15-6 15-15-4-15-15-15Z"/>
+    <path d="M22 7h20v3h-5v44h5v3H22v-3h5V10h-5Z"/>
+  </g>
+</svg>
