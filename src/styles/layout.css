@@ -5,21 +5,16 @@
 
 .app-header {
   display: grid;
-  grid-template-columns: auto min-content 1fr;
+  grid-template-columns: 80px auto 1fr;
   align-items: stretch;
   width: 100%;
   min-height: 78px;
   background: #2eb6aa;
   border-bottom: 2px solid #12675e;
+  /* Eliminada la transición CSS para evitar conflictos con Framer Motion */
 }
 
-/* Sincronización fija para el ancho del header cuando se abre el menú */
-:has(.app-body.sidebar-open) .app-header,
-.app-header:has(.sidebar-expanded) {
-  grid-template-columns: 260px auto 1fr;
-}
-
-/* 1. SECCIÓN DEL LOGO Y MENÚ - Centrado perfecto */
+/* 1. SECCIÓN DEL LOGO Y MENÚ */
 .header-brand-section {
   display: flex;
   align-items: center;
@@ -29,7 +24,8 @@
   box-sizing: border-box;
   min-width: 0;
   height: 100%;
-  width: 260px; /* Ancho fijo para mantener la línea estática */
+  width: 80px;
+  /* Eliminada la transición CSS */
 }
 
 .brand-controls-wrapper {
@@ -76,18 +72,7 @@
   align-items: center;
 }
 
-.close-panel-button {
-  display: grid;
-  place-items: center;
-  background: transparent;
-  border: 0;
-  padding: 6px;
-  cursor: pointer;
-  color: inherit;
-  flex-shrink: 0;
-}
-
-/* 2. SECCIÓN DE NAVEGACIÓN DE BOTONES */
+/* 2. SECCIÓN DE NAVEGACIÓN Y LEMA */
 .header-nav-section {
   display: flex;
   align-items: center;
@@ -118,7 +103,6 @@
   flex-shrink: 0;
 }
 
-/* 3. SECCIÓN DEL LEMA CENTRADO */
 .header-tagline-section {
   display: flex;
   align-items: center;
@@ -137,7 +121,7 @@
   text-align: center;
 }
 
-/* ESTRUCTURA DEL CUERPO Y SIDEBAR FLOTANTE (OVERLAY) */
+/* 3. ESTRUCTURA DEL CUERPO Y SIDEBAR FLOTANTE */
 .app-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -151,45 +135,52 @@
 
 .template-sidebar {
   position: fixed;
-  top: 78px; /* Justo debajo del header principal */
+  top: 78px;
   left: 0;
   bottom: 0;
   width: 260px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 26px 20px;
+  gap: 28px; /* ENTRE secciones: grande */
+  padding: 26px 12px;
   background: #dff1ed;
   border-right: 1px solid #9ec5bd;
   box-shadow: 6px 0 20px rgba(0, 0, 0, 0.12);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
   overflow-y: auto;
-}
-
-/* Al abrir el menú, se desliza sobre la pantalla sin desplazar el contenido */
-.app-body.sidebar-open .template-sidebar,
-.template-sidebar.open {
-  transform: translateX(0);
 }
 
 .template-sidebar h2 {
   font-size: 1.8rem;
 }
 
-.template-sidebar p {
+/* Cada sección agrupa su título y sus botones */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1px; /* DENTRO de la sección: pequeño */
+}
+
+/* Título pegado a su contenido.
+   Se usa .template-sidebar .sidebar-section .eyebrow (más específico)
+   para ganarle a cualquier estilo global de .eyebrow */
+.template-sidebar .sidebar-section .eyebrow {
+  display: block;
+  margin: 0;
+  padding: 0 20px 4px; /* alineado con el texto de los botones */
+  line-height: 1.2;
+}
+
+.template-sidebar .sidebar-empty {
+  margin: 0;
+  padding: 4px 20px;
+  line-height: 1.4;
   font-size: 0.8rem;
-  margin-bottom: 0;
 }
 
-.template-sidebar > a:not(.button) {
-  padding: 8px 0;
-}
-
-.sidebar-profile {
+/* Perfil abajo: más específico para ganarle al "margin: 0" del botón */
+.template-sidebar .sidebar-profile {
   margin-top: auto;
-  border-top: 1px solid #9ec5bd;
 }
 
 .page-shell {
@@ -197,6 +188,7 @@
   padding: clamp(18px, 3vw, 44px);
   margin: 0;
 }
+
 .onboarding-shell {
   position: relative;
   padding-bottom: 120px;
@@ -342,9 +334,15 @@
   font-size: 0.72rem;
   text-transform: capitalize;
 }
-.status-tag.viable { background: #247b58; }
-.status-tag.ajustar { background: #c08722; }
-.status-tag.sin_aportacion { background: #7b8581; }
+.status-tag.viable {
+  background: #247b58;
+}
+.status-tag.ajustar {
+  background: #c08722;
+}
+.status-tag.sin_aportacion {
+  background: #7b8581;
+}
 .report-next-steps {
   display: grid;
   gap: 9px;
@@ -450,4 +448,103 @@
     width: 100%;
     border-right: 0;
   }
+}
+
+/* Botones del sidebar (estilo "pastilla" como Gemini) */
+.sidebar-action-button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box; /* el padding no desborda el ancho */
+  margin: 0;
+  padding: 8px 20px; /* antes 12px: hover más bajo, botones más juntos */
+  background: transparent;
+  border: none;
+  border-radius: 999px; /* pastilla completa */
+  color: #105f56;
+  font-family: inherit; /* los <button> no heredan la fuente por defecto */
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sidebar-action-button:hover {
+  background: rgba(16, 95, 86, 0.1);
+}
+
+/* ---------- Análisis guardados (menú lateral) ---------- */
+.sidebar-history {
+  display: flex;
+  flex-direction: column;
+}
+
+/* El botón principal usa el estilo de pastilla; se quita el triángulo por defecto */
+.sidebar-history > summary {
+  list-style: none;
+}
+
+.sidebar-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-history .history-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-history[open] > summary .history-chevron {
+  transform: rotate(180deg);
+}
+
+/* Lista desplegada, con una guía a la izquierda */
+.sidebar-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 4px 0 0 20px;
+  padding-left: 10px;
+  border-left: 2px solid #b9d9d1;
+}
+
+.sidebar-history-item > summary {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  list-style: none;
+  transition: background 0.2s ease;
+}
+
+.sidebar-history-item > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-history-item > summary:hover,
+.sidebar-history-item[open] > summary {
+  background: rgba(16, 95, 86, 0.1);
+}
+
+.sidebar-history .history-message {
+  padding: 6px 12px;
+}
+
+.sidebar-history .history-message strong {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #568b81;
+}
+
+.sidebar-history .history-message p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
 }

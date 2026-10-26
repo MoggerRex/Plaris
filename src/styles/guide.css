@@ -1,0 +1,137 @@
+/* GUÍA PLARIS */
+
+/* ---------- Categorías: ancho completo, repartidas y centradas ---------- */
+.guide-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  width: 100%;
+  border-bottom: 1px solid #9ec5bd;
+  background: #f7faf8;
+}
+
+.guide-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  background: transparent;
+  color: #105f56;
+  border: 0;
+  border-right: 1px solid #d3e4de;
+  border-radius: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.guide-tabs button:last-child {
+  border-right: 0;
+}
+
+.guide-tabs button:hover {
+  background: rgba(16, 95, 86, 0.08);
+}
+
+.guide-tabs button[aria-pressed='true'] {
+  background: #105f56;
+  color: #ffffff;
+}
+
+.guide-tabs button:focus-visible {
+  outline: 2px solid #105f56;
+  outline-offset: -4px;
+}
+
+/* ---------- Contenido: todo el ancho, sin tarjeta ---------- */
+.guide-content {
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(22px, 3vw, 44px) clamp(20px, 4vw, 64px) clamp(32px, 4vw, 64px);
+}
+
+.guide-header {
+  margin-bottom: 8px;
+}
+
+.guide-header h2 {
+  margin-bottom: 10px;
+}
+
+.guide-intro {
+  max-width: 1100px; /* solo la introducción; así se lee cómoda */
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Las secciones se acomodan en columnas: usan todo el ancho sin líneas larguísimas */
+.guide-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px)));
+  gap: 8px clamp(28px, 4vw, 64px);
+  align-items: start;
+}
+
+.guide-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #d3e4de;
+}
+
+.guide-section h3 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+  color: #105f56;
+}
+
+.guide-section p {
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+.guide-list {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  line-height: 1.65;
+}
+
+.guide-list li {
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.guide-list li::marker {
+  color: #34b8a9;
+  font-weight: 700;
+}
+
+/* Recuadros de ejemplo / consejo / ojo */
+.guide-callout {
+  margin: 16px 0 4px;
+  padding: 14px 18px;
+  background: #e3f0e9;
+  border-left: 4px solid #34b8a9;
+  border-radius: 6px;
+}
+
+.guide-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #105f56;
+}
+
+.guide-callout p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.guide-content .button {
+  margin-top: 32px;
+}

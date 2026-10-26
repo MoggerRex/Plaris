@@ -44,3 +44,10 @@ Validación del selector: `node --test src/utils/selectores.test.js`.
 </p>
 
 https://excelfind.com/excel-templates/ultimate-excel-personal-budget-base/?ds24tr=yt
+
+
+const key = 'plaris-budget-v1';
+const state = JSON.parse(localStorage.getItem(key) || '{}');
+state.onboardingComplete = false;
+localStorage.setItem(key, JSON.stringify(state));
+location.href = '/onboarding/ingresos';
