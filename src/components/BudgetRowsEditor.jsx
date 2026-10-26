@@ -2,7 +2,14 @@ import MoneyInput from './common/MoneyInput';
 import { Plus, Trash2 } from 'lucide-react';
 import { createId, formatCurrency, sumAmounts } from '../services/budgetService';
 
-export default function BudgetRowsEditor({ section, rows, onChange, label, showCategory = false }) {
+export default function BudgetRowsEditor({
+  section,
+  rows,
+  onChange,
+  label,
+  showCategory = false,
+  incomeCategoryOnly = false,
+}) {
   function updateRow(id, key, value) {
     onChange(
       rows.map((row) =>
@@ -10,7 +17,9 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
           ? {
               ...row,
               [key]: value,
-              ...(key === 'name' && section !== 'incomes' ? { category: value } : {}),
+              ...(key === 'name' && (section !== 'incomes' || incomeCategoryOnly)
+                ? { category: value }
+                : {}),
             }
           : row,
       ),
@@ -36,12 +45,18 @@ export default function BudgetRowsEditor({ section, rows, onChange, label, showC
         {rows.map((row) => (
           <div className={`budget-row${showCategory ? ' with-category' : ''}`} key={row.id}>
             <label className="field">
-              <span>{section === 'incomes' ? 'Fuente de ingreso' : 'Categoría u objetivo'}</span>
+              <span>
+                {section === 'incomes'
+                  ? incomeCategoryOnly
+                    ? 'Categoría'
+                    : 'Fuente de ingreso'
+                  : 'Categoría u objetivo'}
+              </span>
               <input
                 value={row.name}
                 onChange={(event) => updateRow(row.id, 'name', event.target.value)}
                 placeholder={section === 'incomes' ? 'Ej. Sueldo' : 'Ej. Vivienda'}
-                aria-label={`${label}: nombre`}
+                aria-label={`${label}: ${incomeCategoryOnly ? 'categoría' : 'nombre'}`}
               />
             </label>
             {showCategory && (

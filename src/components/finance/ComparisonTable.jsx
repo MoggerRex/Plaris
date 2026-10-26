@@ -16,7 +16,6 @@ export default function ComparisonTable({ data }) {
               <th>Tipo</th>
               <th>Planeado</th>
               <th>Real</th>
-              <th>Real menos planeado</th>
             </tr>
           </thead>
           <tbody>
@@ -25,15 +24,11 @@ export default function ComparisonTable({ data }) {
                 <td>{item.name}</td>
                 <td>{money(item.Planeado)}</td>
                 <td>{money(item.Real)}</td>
-                <td>{money(item.Real - item.Planeado)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="empty-state">
-        La diferencia describe lo registrado; un resultado positivo no siempre significa una mejora.
-      </p>
     </section>
   );
 }

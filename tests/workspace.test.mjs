@@ -53,8 +53,25 @@ test('templates create isolated copies and apply without altering other months o
   assert.equal(next.monthlyBudgets['2026-11'].incomes[0].amountCents, 4000000);
   assert.equal(next.monthlyBudgets['2026-10'], budget);
   assert.equal(next.transactions, transactions);
-  next.deudas_activas[0].balance = 5;
-  assert.equal(template.debts[0].balance, 10000);
+  assert.equal(next.deudas_activas, debts);
+  assert.equal(next.profile, profile);
+  assert.equal(template.debts, undefined);
+  assert.equal(template.profile, undefined);
+  next.monthlyBudgets['2026-11'].incomes[0].amountCents = 1;
+  assert.equal(template.budget.incomes[0].amountCents, 4000000);
+});
+
+test('legacy templates replace only planned amounts and comparisons keep all actual movements', () => {
+  const actual = Array.from({ length: 12 }, (_, index) => ({ id: String(index), date: '2026-10-12', type: 'income', amountCents: 10000 }));
+  const template = { id: 'legacy', budget, debts: [{ balance: 999 }], profile: { goalName: 'Old goal' } };
+  const state = { monthlyBudgets: { '2026-10': { incomes: [], expenses: [], savings: [] } }, savedTemplates: [template], transactions: actual, profile, deudas_activas: debts };
+  const next = applyTemplate(state, template.id, '2026-10');
+  assert.equal(next.profile, profile);
+  assert.equal(next.deudas_activas, debts);
+  assert.equal(next.transactions, actual);
+  const comparison = buildComparison(next.monthlyBudgets['2026-10'], next.transactions, '2026-10');
+  assert.deepEqual(comparison.map(({ Planeado }) => Planeado), [30000, 12000, 2000]);
+  assert.equal(comparison[0].Real, 1200);
 });
 
 test('saved profile, templates and conversations survive reload; malformed legacy goal does not reset budget', () => {

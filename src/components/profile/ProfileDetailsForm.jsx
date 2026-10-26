@@ -25,7 +25,7 @@ export default function ProfileDetailsForm({ profile, onSave }) {
 
   return (
     <form className="panel" onSubmit={save}>
-      <h2>Tu perfil y tu meta</h2>
+      <h2>Tu meta y tus datos</h2>
       <div className="goal-grid">
         {fields.map(([key, label, type]) => (
           <label className="field" key={key}>
@@ -45,7 +45,7 @@ export default function ProfileDetailsForm({ profile, onSave }) {
       <p>
         El ahorro actual es el saldo que ya tienes. La aportación mensual se registra en Ahorros.
       </p>
-      <button className="button button-primary">Guardar perfil</button>
+      <button className="button button-primary">Guardar meta y datos</button>
       {message && <p role="status">{message}</p>}
     </form>
   );

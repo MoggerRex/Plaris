@@ -1,0 +1,25 @@
+.brand .brand-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: Georgia, serif;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.brand .brand-symbol {
+  display: block;
+  width: 44px;
+  height: auto;
+  flex-shrink: 0;
+}
+.brand .brand-name {
+  font-size: 1.7rem;
+}
+@media (max-width: 650px) {
+  .brand .brand-symbol {
+    width: 36px;
+  }
+  .brand .brand-name {
+    font-size: 1.35rem;
+  }
+}

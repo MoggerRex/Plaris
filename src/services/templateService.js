@@ -7,8 +7,15 @@ export function snapshotTemplate(state, name, month) {
     name: name.trim(),
     createdAt: new Date().toISOString(),
     budget: cloneBudget(state.monthlyBudgets[month] || state.template || emptyBudget()),
-    debts: structuredClone(state.deudas_activas || []),
-    profile: { ...state.profile },
+  };
+}
+
+export function saveTemplate(state, name, month) {
+  const template = snapshotTemplate(state, name, month);
+  return {
+    ...state,
+    savedTemplates: [template, ...(state.savedTemplates || [])],
+    templateAutofillMonths: { ...state.templateAutofillMonths, [month]: true },
   };
 }
 
@@ -18,7 +25,13 @@ export function applyTemplate(state, id, month) {
   return {
     ...state,
     monthlyBudgets: { ...state.monthlyBudgets, [month]: cloneBudget(selected.budget) },
-    deudas_activas: structuredClone(selected.debts),
-    profile: { ...selected.profile },
+    templateAutofillMonths: { ...state.templateAutofillMonths, [month]: true },
+  };
+}
+
+export function deleteTemplate(state, id) {
+  return {
+    ...state,
+    savedTemplates: (state.savedTemplates || []).filter((item) => item.id !== id),
   };
 }

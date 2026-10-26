@@ -1,0 +1,24 @@
+﻿.symbol-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+.symbol-intro-backdrop {
+  position: absolute;
+  inset: 0;
+}
+.symbol-intro-mark {
+  position: fixed;
+  display: block;
+  max-width: none;
+  height: auto;
+  opacity: 0;
+  transform-origin: top left;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .symbol-intro {
+    display: none;
+  }
+}

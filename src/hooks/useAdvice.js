@@ -11,7 +11,8 @@ export function useAdvice() {
 
   useEffect(() => () => controller.current?.abort(), []);
 
-  async function generate(data, plan) {
+  async function generate(data) {
+    const plan = 'avanzado';
     controller.current?.abort();
     setError('');
     setResult(null);

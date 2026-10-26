@@ -26,16 +26,19 @@ export default function Charts() {
         <Link className="button button-primary" to={'/analisis?mes=' + state.month}>
           Ayúdame a entender mis datos
         </Link>
-        <Link className="button button-secondary" to={'/movimientos?mes=' + state.month}>
-          Registrar movimientos
+        <Link
+          className="button button-secondary"
+          to={'/perfil?mes=' + state.month + '#movimientos'}
+        >
+          Abrir presupuesto
         </Link>
       </div>
       <div className="panel">
         <h2>¿Qué estás viendo?</h2>
         <p>
           <strong>Planeado:</strong> los ingresos, gastos y aportaciones de ahorro que guardaste en
-          tu perfil para este mes. <strong>Real:</strong> los movimientos que registraste con fecha
-          en este mes.
+          tu presupuesto para este mes. <strong>Real:</strong> los movimientos que registraste con
+          fecha en este mes.
         </p>
         <p>
           La gráfica de barras compara ambos. Las gráficas circulares de ingresos, gastos y ahorros

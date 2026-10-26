@@ -1,3 +1,4 @@
+
 # Arquitectura de Plaris
 
 ## Cómo repartir el trabajo

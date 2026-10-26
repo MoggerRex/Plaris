@@ -1,6 +1,18 @@
 import { financeSections } from '../config/financeSections.js';
 import { sumAmounts } from './budgetService.js';
 
+export function comparisonDifferenceCents(item) {
+  const planned = Math.round(item.Planeado * 100);
+  const actual = Math.round(item.Real * 100);
+  return item.key === 'expenses' ? planned - actual : actual - planned;
+}
+
+export function actualUnassignedCents(comparison) {
+  const actual = (key) =>
+    Math.round((comparison.find((item) => item.key === key)?.Real || 0) * 100);
+  return actual('incomes') - actual('expenses') - actual('savings');
+}
+
 export function buildComparison(budget, transactions, month) {
   return financeSections
     .filter((section) => section.type)

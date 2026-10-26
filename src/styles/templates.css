@@ -1,0 +1,296 @@
+﻿/* Template window: save form, saved cards and loading confirmation. */
+.template-manager {
+  color: #105f56;
+}
+.template-manager .template-save {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px 12px;
+  align-items: end;
+  padding: 24px;
+  border-radius: 16px;
+}
+.template-manager .template-save-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.template-manager h2,
+.template-manager h3 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+.template-manager .template-save-heading h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+}
+.template-manager .template-save-heading p {
+  margin: 0;
+  color: #748a83;
+  font-size: 0.85rem;
+}
+.template-manager .template-save .field > input {
+  height: 46px;
+}
+.template-manager .template-save > .button {
+  min-height: 46px;
+}
+.template-save-note {
+  grid-column: 1 / -1;
+  color: #748a83;
+  font-size: 0.75rem;
+}
+.template-list-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+.template-list-heading h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.template-list-heading > span {
+  color: #748a83;
+  font-size: 0.8rem;
+}
+.template-manager .template-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.template-manager .template-card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 16px;
+}
+.template-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+.template-card-heading h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+}
+.template-date {
+  color: #748a83;
+  font-size: 0.8rem;
+  margin: 10px 0 20px;
+}
+.template-manager .template-card dl {
+  margin: 14px 0 24px;
+  gap: 14px;
+  font-size: 0.9rem;
+}
+.template-manager dt {
+  color: #748a83;
+}
+.template-manager dd {
+  font-variant-numeric: tabular-nums;
+}
+.template-available {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #d8e4dd;
+  padding-top: 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+.template-available strong {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.template-manager .template-use {
+  width: 100%;
+  margin-top: auto;
+  background: white;
+  border-color: #d8e4dd;
+}
+.template-manager .template-use:hover {
+  background: #eaf3ee;
+  border-color: #105f56;
+}
+.template-confirmation {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f1f6f2;
+}
+.template-confirmation p {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+}
+.template-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 620px) {
+  .template-manager .template-grid,
+  .template-manager .template-save {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-manager .template-card,
+  .template-manager .template-save {
+    padding: 18px;
+  }
+}
+
+/* Minimal destination selector and template deletion. */
+.template-target-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+.template-target-month {
+  position: relative;
+}
+.template-target-month > button {
+  text-transform: capitalize;
+  background: white;
+  font-weight: 500;
+}
+.template-target-month > button:hover {
+  background: #105f56;
+  color: white;
+}
+.template-target-month > input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  width: 100%;
+}
+.template-delete {
+  padding: 6px 10px;
+  border: 1px solid #cfa9a4;
+  border-radius: 6px;
+  background: white;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+  color: #8b5d58;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.template-delete:hover {
+  color: #a12e26;
+  background: #fff0ed;
+  border-color: #a12e26;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgb(140 55 40 / 12%);
+}
+
+/* Card lifting, drop target feedback and disposal animation. */
+.template-card {
+  cursor: grab;
+}
+.template-card-held {
+  opacity: 0.25;
+  border-style: dashed;
+}
+.template-drag-handle {
+  margin-top: 12px;
+  padding: 8px;
+  background: #f5f8f6;
+  border: 1px dashed #c4d8cf;
+  border-radius: 6px;
+  color: #6e827b;
+  font-size: 0.7rem;
+  cursor: grab;
+  touch-action: none;
+}
+.template-drag-handle:hover {
+  background: #e8f2ec;
+  color: #105f56;
+}
+.template-drag-handle:active {
+  cursor: grabbing;
+}
+.template-drag-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+.template-manager .template-floating-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  box-sizing: border-box;
+  opacity: 0.97;
+  box-shadow: 0 24px 65px rgb(18 56 44 / 24%);
+  border-color: #80ad9b;
+  cursor: grabbing;
+  will-change: transform;
+}
+.template-floating-card.is-deleting {
+  transition:
+    transform 420ms cubic-bezier(0.5, 0, 0.8, 0.6),
+    opacity 420ms;
+  opacity: 0;
+}
+.template-floating-card.is-returning {
+  transition: transform 220ms ease-out;
+}
+.template-trash-zone {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: min(360px, calc(100vw - 32px));
+  min-height: 100px;
+  padding: 18px 24px;
+  border: 2px dashed #b66a60;
+  background: #fff6f3;
+  color: #9c4137;
+  border-radius: 18px;
+  box-shadow: 0 10px 40px rgb(70 25 15 / 18%);
+  transition:
+    background-color 160ms,
+    transform 160ms,
+    box-shadow 160ms;
+  font-size: 0.9rem;
+}
+.template-trash-zone.is-over {
+  background: #f7d9d2;
+  border-style: solid;
+  transform: translateX(-50%) scale(1.07);
+  box-shadow: 0 12px 45px rgb(140 55 40 / 28%);
+}
+.template-trash-zone.is-over svg {
+  animation: template-bin-wiggle 350ms ease-in-out infinite alternate;
+}
+@keyframes template-bin-wiggle {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .template-delete,
+  .template-floating-card,
+  .template-trash-zone {
+    transition: none !important;
+  }
+  .template-trash-zone.is-over svg {
+    animation: none;
+  }
+}

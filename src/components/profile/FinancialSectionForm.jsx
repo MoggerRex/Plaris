@@ -27,7 +27,7 @@ export default function FinancialSectionForm({ section, rows, onSave }) {
   }
 
   return (
-    <form onSubmit={save}>
+    <form className="budget-section-form" onSubmit={save}>
       {debts ? (
         <DebtEditor rows={draft} onChange={setDraft} />
       ) : (
@@ -36,7 +36,7 @@ export default function FinancialSectionForm({ section, rows, onSave }) {
           section={section.key}
           rows={draft}
           onChange={setDraft}
-          showCategory={section.key === 'incomes'}
+          incomeCategoryOnly={section.key === 'incomes'}
         />
       )}
       <button className="button button-primary">Guardar {section.label.toLowerCase()}</button>

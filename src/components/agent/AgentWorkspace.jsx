@@ -7,12 +7,11 @@ import AdviceResult from './AdviceResult';
 
 export default function AgentWorkspace({ month, budget, profile, debts }) {
   const [context, setContext] = useState('');
-  const [plan, setPlan] = useState('estandar');
   const { result, error, loading, generate } = useAdvice();
 
   function submit(event) {
     event.preventDefault();
-    generate(toPlannerData(budget, profile, debts, month, context), plan);
+    generate(toPlannerData(budget, profile, debts, month, context));
   }
 
   return (
@@ -42,17 +41,6 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
           disabled={loading}
         />
         <div className="agent-submit">
-          <label className="field">
-            <span>Tipo de análisis</span>
-            <select
-              value={plan}
-              onChange={(event) => setPlan(event.target.value)}
-              disabled={loading}
-            >
-              <option value="estandar">Estándar</option>
-              <option value="avanzado">Avanzado</option>
-            </select>
-          </label>
           <button className="button button-primary" disabled={loading}>
             {loading ? 'Analizando…' : 'Crear mi plan'} <ArrowUpRight size={17} />
           </button>

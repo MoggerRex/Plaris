@@ -2,9 +2,9 @@ export const guideTopics = [
   {
     id: 'inicio',
     title: 'Guía Plaris',
-    text: 'Empieza en tu perfil: registra ingresos, gastos, ahorros y deudas. Después consulta el agente o explora los gráficos. Tus datos se guardan en este navegador; no se sincronizan entre dispositivos.',
-    link: '/perfil/resumen',
-    action: 'Abrir mi perfil',
+    text: 'En Presupuesto puedes ajustar lo planeado y registrar tus ingresos, gastos y aportaciones reales en la misma pantalla. Después consulta el agente o explora los gráficos. Tus datos se guardan en este navegador; no se sincronizan entre dispositivos.',
+    link: '/perfil',
+    action: 'Abrir presupuesto',
   },
   {
     id: 'finanzas',
@@ -14,7 +14,7 @@ export const guideTopics = [
   {
     id: 'agente',
     title: 'Agente',
-    text: 'Define una meta, su costo, plazo, ahorro actual y reserva protegida en tu perfil. El agente calcula tu presupuesto y usa Ollama para explicar opciones. Estándar ofrece un resumen; Avanzado analiza deudas y alternativas con mayor detalle.',
+    text: 'Define una meta, su costo, plazo, ahorro actual y reserva protegida en tu perfil. El agente calcula tu presupuesto y usa Ollama para explicar opciones.',
     link: '/dashboard',
     action: 'Abrir el agente',
   },
@@ -34,8 +34,8 @@ export const guideTopics = [
   },
   {
     id: 'perfil',
-    title: 'Tu perfil y plantillas',
-    text: 'Los botones del resumen te llevan al apartado correspondiente del perfil. Los presupuestos son mensuales; el perfil y las deudas son datos actuales compartidos. Guarda una plantilla para copiar presupuesto, deudas y meta. Aplicarla reemplaza los datos indicados; los movimientos reales se conservan.',
+    title: 'Tu presupuesto y plantillas',
+    text: 'Presupuesto reúne lo planeado y los movimientos reales del mes. Guarda una plantilla de tus ingresos, gastos y ahorros planeados para reutilizarlos. Al aplicarla se reemplaza únicamente lo planeado del mes elegido y se actualiza la comparación. Tus movimientos reales, meta y deudas se conservan.',
     link: '/plantillas',
     action: 'Mis plantillas',
   },

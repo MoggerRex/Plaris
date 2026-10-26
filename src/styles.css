@@ -3,3 +3,7 @@
 @import './styles/agent.css';
 @import './styles/forms.css';
 @import './styles/finance.css';
+@import './styles/startup.css';
+@import './styles/budget.css';
+
+@import './styles/templates.css';

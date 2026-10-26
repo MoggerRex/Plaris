@@ -1,3 +1,6 @@
+import { useRef } from 'react';
+import { useEntrance } from '../../animations/useEntrance';
+import { formEntrance } from '../../animations/entrance';
 import { ArrowLeft, ArrowRight, Check, Wallet } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import BudgetRowsEditor from '../../components/BudgetRowsEditor';
@@ -38,6 +41,8 @@ const steps = [
 ];
 
 export default function Onboarding() {
+  const entranceRef = useRef(null);
+  useEntrance(entranceRef, formEntrance);
   const { step: routeStep = 'ingresos' } = useParams();
   const navigate = useNavigate();
   const { onboardingComplete, draft, updateDraft, completeOnboarding, storageError } = useBudget();
@@ -75,7 +80,7 @@ export default function Onboarding() {
   }
 
   return (
-    <main className="page-shell onboarding-shell">
+    <main className="page-shell onboarding-shell" ref={entranceRef}>
       <div className="onboarding-intro">
         <span className="eyebrow">
           <Wallet size={15} /> Tu punto de partida
