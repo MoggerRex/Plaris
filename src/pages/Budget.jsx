@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { financeSections, budgetLink as profileLink } from '../config/financeSections';
 import BudgetMonthSummary from '../components/finance/BudgetMonthSummary';
+import { plannedSavingsRows } from '../services/budgetConnections';
 import MonthPicker from '../components/common/BudgetMonthPicker';
 import PageHeading from '../components/common/PageHeading';
 import PlannedBudgetForm from '../components/profile/PlannedBudgetForm';
@@ -18,6 +19,8 @@ export default function Budget() {
   const templatesRef = useRef(null);
   const navigate = useNavigate();
   const budgetSections = financeSections.filter((item) => item.type);
+  const plannedRows =
+    section === 'savings' ? plannedSavingsRows(state.budget) : state.budget[section] || [];
   const selected = budgetSections.find((item) => item.key === section);
   useEffect(() => {
     if (hash === '#movimientos') actualRef.current?.scrollIntoView({ block: 'start' });
@@ -84,10 +87,14 @@ export default function Budget() {
           state={state}
           plannedContent={
             <PlannedBudgetForm
-              key={section + state.month + JSON.stringify(state.budget[section])}
+              key={section + state.month + JSON.stringify(plannedRows)}
               section={selected}
-              rows={state.budget[section] || []}
-              onSave={(rows) => state.updateBudget(state.month, section, rows)}
+              rows={plannedRows}
+              onSave={(rows) =>
+                section === 'savings'
+                  ? state.updateSavingsPlan(state.month, rows)
+                  : state.updateBudget(state.month, section, rows)
+              }
             />
           }
         />

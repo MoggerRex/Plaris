@@ -3,9 +3,13 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, Pencil, FileClock, FolderUser, CornerDownLeft } from 'lucide-react';
 import { useAdvice } from '../../hooks/useAdvice';
 import { toPlannerData } from '../../services/financeAdapter';
+import { primaryBudgetGoal } from '../../services/budgetConnections';
 import AdviceResult from './AdviceResult';
 
 export default function AgentWorkspace({ month, budget, profile, debts }) {
+  const activeGoal = primaryBudgetGoal(budget, profile, month);
+  const goals = (budget.goals || []).filter((goal) => goal.name?.trim());
+  const goalNames = goals.length ? goals.map((goal) => goal.name).join(' · ') : activeGoal.name;
   const [context, setContext] = useState('');
   const [plan, setPlan] = useState('estandar');
   const { result, error, loading, generate } = useAdvice();
@@ -26,9 +30,9 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
         Dale un propósito a tu dinero. Plaris te ayuda a encontrar el camino.
       </p>
       <div className="goal-preview">
-        <strong>{profile.goalName || 'Aún no has definido una meta'}</strong>
-        <Link to={'/perfil/resumen?mes=' + month}>
-          Editar mi meta y mis datos <ArrowUpRight size={16} />
+        <strong>{goalNames || 'Aún no has definido una meta'}</strong>
+        <Link to={(goals.length ? '/presupuesto/savings?mes=' : '/perfil/resumen?mes=') + month}>
+          Ver mis metas y datos <ArrowUpRight size={16} />
         </Link>
       </div>
 

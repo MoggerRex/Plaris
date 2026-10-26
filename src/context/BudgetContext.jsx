@@ -1,3 +1,4 @@
+import { applySavingsPlan } from '../services/budgetConnections';
 import { saveTemplate, applyTemplate, deleteTemplate } from '../services/templateService';
 import { useCallback, useEffect, useState } from 'react';
 import { BudgetContext } from './useBudget';
@@ -81,6 +82,19 @@ export function BudgetProvider({ children }) {
     }));
   }
 
+  function updateSavingsPlan(month, rows) {
+    setData((previous) => ({
+      ...previous,
+      monthlyBudgets: {
+        ...previous.monthlyBudgets,
+        [month]: applySavingsPlan(
+          previous.monthlyBudgets[month] || cloneBudget(previous.template || emptyBudget()),
+          rows,
+        ),
+      },
+    }));
+  }
+
   function updateProfile(profile) {
     setData((previous) => ({ ...previous, profile }));
   }
@@ -154,6 +168,7 @@ export function BudgetProvider({ children }) {
         completeOnboarding,
         ensureMonth,
         updateBudget,
+        updateSavingsPlan,
         saveAsTemplate,
         addTransaction,
         updateTransaction,
