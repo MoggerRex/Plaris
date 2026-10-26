@@ -8,3 +8,7 @@ export const financeSections = [
 export function profileLink(section, month) {
   return `/perfil/${section}?mes=${month}`;
 }
+
+export function budgetLink(section, month) {
+  return `/presupuesto/${section}?mes=${month}`;
+}

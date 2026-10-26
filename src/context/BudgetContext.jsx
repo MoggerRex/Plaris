@@ -1,4 +1,4 @@
-import { snapshotTemplate, applyTemplate } from '../services/templateService';
+import { saveTemplate, applyTemplate, deleteTemplate } from '../services/templateService';
 import { useCallback, useEffect, useState } from 'react';
 import { BudgetContext } from './useBudget';
 import {
@@ -90,14 +90,15 @@ export function BudgetProvider({ children }) {
   }
 
   function saveNamedTemplate(name, month) {
-    setData((previous) => ({
-      ...previous,
-      savedTemplates: [snapshotTemplate(previous, name, month), ...(previous.savedTemplates || [])],
-    }));
+    setData((previous) => saveTemplate(previous, name, month));
   }
 
   function applyNamedTemplate(id, month) {
     setData((previous) => applyTemplate(previous, id, month));
+  }
+
+  function deleteNamedTemplate(id) {
+    setData((previous) => deleteTemplate(previous, id));
   }
 
   function saveAnalysis(record) {
@@ -147,6 +148,7 @@ export function BudgetProvider({ children }) {
         updateDebts,
         saveNamedTemplate,
         applyNamedTemplate,
+        deleteNamedTemplate,
         saveAnalysis,
         updateDraft,
         completeOnboarding,

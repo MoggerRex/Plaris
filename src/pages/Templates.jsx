@@ -15,6 +15,7 @@ export default function Templates() {
         templates={state.savedTemplates}
         onSave={state.saveNamedTemplate}
         onApply={state.applyNamedTemplate}
+        onDelete={state.deleteNamedTemplate}
       />
     </main>
   );

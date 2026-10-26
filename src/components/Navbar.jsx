@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, ScanSearch, UserRound, MessageSquareText } from 'lucide-react';
+import { BarChart3, BookOpen, ScanSearch, Wallet, MessageSquareText } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useBudget } from '../context/useBudget';
@@ -8,7 +8,7 @@ const navigation = [
   { path: '/graficas', label: 'Tablas y gráficas', icon: BarChart3 },
   { path: '/analisis', label: 'Análisis gráfico', icon: ScanSearch },
   { path: '/guia', label: 'Guía', icon: BookOpen },
-  { path: '/perfil', label: 'Mi perfil', icon: UserRound },
+  { path: '/presupuesto', label: 'Presupuesto', icon: Wallet },
 ];
 
 export default function Navbar({ sidebarOpen, onToggleSidebar }) {
@@ -58,7 +58,10 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }) {
             </button>
           </div>
         ) : (
-          <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px' }}>
+          <div
+            className="brand"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px' }}
+          >
             <span className="phi-logo">Φ</span> <span className="brand-title-large">PLARIS</span>
           </div>
         )}
