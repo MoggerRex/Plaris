@@ -28,7 +28,7 @@ function OnboardingOnly() {
 
 function CompletedOnboarding() {
   const { onboardingComplete } = useBudget();
-  return onboardingComplete ? <Outlet /> : <Navigate to="/onboarding/ingresos" replace />;
+  return onboardingComplete ? <Outlet /> : <Navigate to="/onboarding/intro" replace />;
 }
 
 // Keep existing bookmarked budget URLs working after moving the forms to Profile.
@@ -65,7 +65,7 @@ export default function App() {
                 <Route path="/presupuesto/:section" element={<LegacyBudgetRedirect />} />
               </Route>
             </Route>
-            <Route path="/" element={<Navigate to="/onboarding/ingresos" replace />} />
+            <Route path="/" element={<Navigate to="/onboarding/intro" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

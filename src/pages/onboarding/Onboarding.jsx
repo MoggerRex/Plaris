@@ -6,48 +6,39 @@ import GoalsEmergencyEditor from '../../components/onboarding/GoalsEmergencyEdit
 import OnboardingReport from '../../components/onboarding/OnboardingReport';
 import { useBudget } from '../../context/useBudget';
 import {
-  applySurplusAllocation,
   formatCurrency,
   sumAmounts,
-  unassignedAmount,
   validateZeroBasedBudget,
 } from '../../services/budgetService';
 import {
   analyzeOnboardingBudget,
-  applyOnboardingRecommendations,
   projectionRows,
 } from '../../services/onboardingAdvice';
 
 const steps = [
   {
+    slug: 'intro',
+    title: '¿Qué es un presupuesto?',
+    section: 'intro',
+    description: 'Conoce cómo se organiza tu dinero antes de comenzar a registrarlo.',
+  },
+  {
     slug: 'ingresos',
     title: 'Tus ingresos',
     section: 'incomes',
-    description: 'Registra cuánto dinero recibes cada mes.',
+    description: 'Aquí puedes registrar las diferentes fuentes de ingresos que tienes, como un trabajo de oficina, trabajo independiente, comisiones o cualquier otra entrada de dinero mensual.',
   },
   {
     slug: 'gastos',
     title: 'Tus gastos',
     section: 'expenses',
-    description: 'Distribuye tu ingreso entre tus categorías de gasto.',
+    description: 'Marca como necesario un gasto indispensable para mantener tu vida y tus compromisos; desmárcalo si puedes reducirlo o posponerlo, para que Plaris sepa dónde existe margen de ajuste.',
   },
   {
     slug: 'ahorros',
     title: 'Tus ahorros',
     section: 'savings',
-    description: 'Define tus objetivos de ahorro mensual.',
-  },
-  {
-    slug: 'metas',
-    title: 'Metas financieras',
-    section: 'goals',
-    description: 'Define qué quieres alcanzar y en qué orden de prioridad.',
-  },
-  {
-    slug: 'emergencia',
-    title: 'Fondo de emergencia',
-    section: 'emergencyFund',
-    description: 'Construye una reserva para imprevistos.',
+    description: 'Organiza tus metas, ahorros definidos y fondo de emergencia.',
   },
   {
     slug: 'revision',
@@ -65,23 +56,15 @@ export default function Onboarding() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
-  const [recommendationsApplied, setRecommendationsApplied] = useState(false);
+  const [goalAnalysis, setGoalAnalysis] = useState(null);
+  const [goalAnalysisLoading, setGoalAnalysisLoading] = useState(false);
+  const [goalAnalysisError, setGoalAnalysisError] = useState('');
   const index = steps.findIndex((step) => step.slug === routeStep);
   const activeIndex = index < 0 ? 0 : index;
   const step = steps[activeIndex];
-  const rawPending = unassignedAmount(draft);
-  const allocatedDraft = useMemo(
-    () => applySurplusAllocation(draft, draft.surplusAllocation),
-    [draft],
-  );
+  const allocatedDraft = useMemo(() => draft, [draft]);
   const validation = validateZeroBasedBudget(allocatedDraft);
-  const needsSurplusChoice = rawPending > 0 && !draft.surplusAllocation;
-  const validationErrors = [
-    ...validation.errors,
-    ...(needsSurplusChoice
-      ? ['Elige si quieres ahorrar el dinero restante o dejarlo como dinero libre.']
-      : []),
-  ];
+  const validationErrors = validation.errors;
   const stepError = getStepError(step, draft);
 
   useEffect(() => {
@@ -92,7 +75,6 @@ export default function Onboarding() {
       if (cancelled) return;
       setAnalysisLoading(true);
       setAnalysisError('');
-      setRecommendationsApplied(false);
       try {
         const result = await analyzeOnboardingBudget(allocatedDraft);
         if (!cancelled) setAnalysisResult({ ...result, projection: projectionRows(result.analysis) });
@@ -123,13 +105,24 @@ export default function Onboarding() {
     updateDraft(section, value);
   }
 
-  function applyRecommendations() {
-    if (!analysisResult) return;
-    const adjusted = applyOnboardingRecommendations(draft, analysisResult);
-    updateDraft('expenses', adjusted.expenses);
-    updateDraft('goals', adjusted.goals);
-    updateDraft('emergencyFund', adjusted.emergencyFund);
-    setRecommendationsApplied(true);
+  async function analyzeGoals(mode) {
+    setGoalAnalysisLoading(true);
+    setGoalAnalysisError('');
+    try {
+      const requestDraft = mode === 'assisted'
+        ? { ...draft, goals: draft.goals.map((goal) => ({ ...goal, monthlyAmountCents: 0 })) }
+        : draft;
+      const result = await analyzeOnboardingBudget(requestDraft, mode);
+      setGoalAnalysis(result);
+      if (mode === 'assisted') {
+        const amounts = new Map((result.ajustes?.aportacionesMetas || []).map((item) => [item.id, Number(item.monthlyAmountCents) || 0]));
+        updateDraft('goals', draft.goals.map((goal) => amounts.has(goal.id) ? { ...goal, monthlyAmountCents: amounts.get(goal.id) } : goal));
+      }
+    } catch (error) {
+      setGoalAnalysisError(error.message || 'No se pudo consultar a Plaris.');
+    } finally {
+      setGoalAnalysisLoading(false);
+    }
   }
 
   function finish() {
@@ -140,17 +133,8 @@ export default function Onboarding() {
 
   return (
     <main className="page-shell onboarding-shell">
-      <div className="onboarding-intro">
-        <span className="eyebrow">
-          <Wallet size={15} /> Tu punto de partida
-        </span>
-        <h1>Construye un presupuesto que sí cierre</h1>
-        <p>
-          Un presupuesto es un plan para decidir a dónde va tu dinero antes de gastarlo. Lo
-          componen tus ingresos, tus gastos, tus ahorros y las metas que quieres alcanzar.
-        </p>
-      </div>
-      <BalanceBar budget={allocatedDraft} />
+      {step.slug !== 'intro' && <div className="onboarding-intro"><span className="eyebrow"><Wallet size={15} /> Tu punto de partida</span><h1>Tu presupuesto, paso a paso</h1></div>}
+      {step.slug !== 'intro' && <BalanceBar budget={allocatedDraft} />}
       <div className="progress-wrap" aria-label={`Paso ${activeIndex + 1} de ${steps.length}`}>
         <div className="progress-meta">
           <span>
@@ -176,7 +160,20 @@ export default function Onboarding() {
         </div>
       </div>
 
-      {step.section ? (
+      {step.section === 'intro' ? (
+        <IntroStep />
+      ) : step.section === 'savings' ? (
+        <GoalsEmergencyEditor
+          goals={draft.goals}
+          emergencyFund={draft.emergencyFund}
+          onGoalsChange={(value) => updateSection('goals', value)}
+          onEmergencyChange={(value) => updateSection('emergencyFund', value)}
+          onAnalyzeGoals={analyzeGoals}
+          goalAnalysis={goalAnalysis}
+          goalAnalysisLoading={goalAnalysisLoading}
+          goalAnalysisError={goalAnalysisError}
+        />
+      ) : step.section ? (
         step.section === 'goals' || step.section === 'emergencyFund' ? (
           <GoalsEmergencyEditor
             goals={draft.goals}
@@ -189,6 +186,7 @@ export default function Onboarding() {
             label={step.title}
             section={step.section}
             rows={draft[step.section]}
+            description={step.description}
             onChange={(rows) => updateSection(step.section, rows)}
           />
         )
@@ -197,39 +195,10 @@ export default function Onboarding() {
         <section className="panel">
           <div className="section-heading">
             <div>
-              <h2>Tu presupuesto mensual inicial</h2>
-              <p>
-                Si tus ingresos superan los gastos y ahorros, elige qué hacer con la diferencia.
-              </p>
+              <h2>Revisión de tu presupuesto</h2>
+              <p>Plaris resume la distribución que acabas de planear y sus proyecciones.</p>
             </div>
           </div>
-          {rawPending > 0 && (
-            <fieldset>
-              <legend>
-                Te quedan {formatCurrency(rawPending)} por asignar. ¿Qué prefieres hacer?
-              </legend>
-              <label>
-                <input
-                  type="radio"
-                  name="surplus-allocation"
-                  value="savings"
-                  checked={draft.surplusAllocation === 'savings'}
-                  onChange={() => updateDraft('surplusAllocation', 'savings')}
-                />
-                Ahorrarlo como un objetivo adicional
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="surplus-allocation"
-                  value="free"
-                  checked={draft.surplusAllocation === 'free'}
-                  onChange={() => updateDraft('surplusAllocation', 'free')}
-                />
-                Dejarlo como dinero libre para gastos no planeados
-              </label>
-            </fieldset>
-          )}
           <div className="review-grid">
             <ReviewTotal
               label="Ingresos planeados"
@@ -243,13 +212,8 @@ export default function Onboarding() {
             />
             <ReviewTotal
               label="Ahorros planeados"
-              amount={sumAmounts(allocatedDraft.savings)}
+              amount={validation.totals.savings}
               tone="saving"
-            />
-            <ReviewTotal
-              label="Dinero pendiente de asignar"
-              amount={validation.pending}
-              tone={validation.pending === 0 ? 'income' : 'warning'}
             />
           </div>
           <div
@@ -269,8 +233,6 @@ export default function Onboarding() {
         {analysisError && <div className="validation-box warning" role="alert">{analysisError}</div>}
         <OnboardingReport
           result={analysisResult}
-          applied={recommendationsApplied}
-          onApply={applyRecommendations}
         />
         </>
       )}
@@ -308,7 +270,7 @@ export default function Onboarding() {
             type="button"
             className="button button-primary"
             onClick={finish}
-            disabled={!validation.valid || needsSurplusChoice}
+            disabled={!validation.valid}
           >
             <Check size={17} /> Finalizar configuración
           </button>
@@ -324,15 +286,33 @@ export default function Onboarding() {
   );
 }
 
+function IntroStep() {
+  return (
+    <section className="panel onboarding-explainer">
+      <span className="eyebrow">Antes de comenzar</span>
+      <h2>¿Qué es un presupuesto?</h2>
+      <p>
+        Un presupuesto es un mapa sencillo de tu dinero: muestra cuánto recibes, qué necesitas
+        pagar y qué cantidad puedes reservar para construir tus planes.
+      </p>
+      <div className="budget-concepts">
+        <article><strong>Ingresos</strong><p>El dinero que recibes, como un trabajo de oficina o un trabajo independiente.</p></article>
+        <article><strong>Gastos</strong><p>Los pagos que haces cada mes. Marcar los necesarios ayuda a proteger lo indispensable.</p></article>
+        <article><strong>Ahorros</strong><p>El dinero que separas para metas financieras y para tu fondo de emergencia.</p></article>
+      </div>
+      <p className="guided-note">En los siguientes pasos registraremos cada parte y veremos cómo se relacionan.</p>
+    </section>
+  );
+}
+
 function BalanceBar({ budget }) {
   const totals = validationTotals(budget);
   return (
     <aside className="onboarding-balance" aria-label="Balance mensual actual">
-      <span>Balance mensual</span>
-      <strong>{formatCurrency(totals.income - totals.expenses - totals.savings)}</strong>
-      <small>
-        Ingresos {formatCurrency(totals.income)} · asignado {formatCurrency(totals.expenses + totals.savings)}
-      </small>
+      <span className="balance-label">Balance mensual</span>
+      <div className="balance-metric"><small>Ingresos</small><strong>{formatCurrency(totals.income)}</strong></div>
+      <div className="balance-metric"><small>Asignado</small><strong>{formatCurrency(totals.expenses + totals.savings)}</strong></div>
+      <div className="balance-metric balance-result"><small>Disponible</small><strong>{formatCurrency(totals.income - totals.expenses - totals.savings)}</strong></div>
     </aside>
   );
 }
@@ -380,6 +360,7 @@ function ReviewTotal({ label, amount, tone }) {
 }
 
 function getStepError(step, draft) {
+  if (step.section === 'intro') return '';
   if (step.section === 'incomes') {
     if (!draft.incomes.some((item) => item.name.trim() && item.amountCents > 0)) {
       return 'Agrega al menos un ingreso con descripción y monto mayor a cero.';
@@ -389,6 +370,22 @@ function getStepError(step, draft) {
       : '';
   }
   if (step.section) {
+    if (step.section === 'savings') {
+      if (draft.goals.some((goal) => !goal.name.trim() || goal.targetCents <= 0 || !goal.targetDate)) {
+        return 'Completa el nombre, costo y fecha objetivo de cada meta.';
+      }
+      if (draft.goals.some((goal) => goal.monthlyAmountCents <= 0)) {
+        return 'Consulta a Plaris o registra una aportación mensual para cada meta.';
+      }
+      const availableForGoals = sumAmounts(draft.incomes) - sumAmounts(draft.expenses) - sumAmounts(draft.savings) - Number(draft.emergencyFund?.monthlyAmountCents || 0);
+      const plannedGoals = sumAmounts(draft.goals.map((goal) => ({ amountCents: goal.monthlyAmountCents })));
+      if (plannedGoals > availableForGoals) {
+        return `Las aportaciones de metas superan el disponible mensual de ${formatCurrency(Math.max(0, availableForGoals))}. Ajusta los montos antes de continuar.`;
+      }
+      return draft.savings.some((item) => item.amountCents > 0 && !item.name.trim())
+        ? 'Completa el nombre de cada ahorro con monto.'
+        : '';
+    }
     if (step.section === 'goals') {
       return draft.goals.some((goal) => (goal.targetCents > 0 || goal.monthlyAmountCents > 0) && !goal.name.trim())
         ? 'Completa el nombre de cada meta que tenga un monto.'

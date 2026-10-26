@@ -87,9 +87,12 @@ export function validateZeroBasedBudget(budget) {
     errors.push('Agrega al menos una fuente de ingresos con un monto mayor a cero.');
   }
   for (const [label, items] of sections) {
-    if (items.some((item) => item.amountCents > 0 && !item.name.trim())) {
+    if (items.some((item) => (item.amountCents > 0 || item.monthlyAmountCents > 0) && !item.name.trim())) {
       errors.push(`Completa el nombre de cada elemento de ${label} que tenga un monto.`);
     }
+  }
+  if ((budget.goals || []).some((goal) => goal.name.trim() && (goal.targetCents <= 0 || !goal.targetDate))) {
+    errors.push('Completa el costo y la fecha objetivo de cada meta.');
   }
   if (pending < 0)
     errors.push('Los gastos y ahorros superan los ingresos. Reduce la distribución.');

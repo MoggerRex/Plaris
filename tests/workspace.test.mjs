@@ -5,7 +5,7 @@ import { analyze } from '../src/domain/planner.js';
 import { snapshotTemplate, applyTemplate } from '../src/services/templateService.js';
 import { readBudgetState, writeBudgetState } from '../src/services/budgetService.js';
 import { requestChat } from '../src/services/chatService.js';
-import { applyOnboardingRecommendations, buildLocalAnalysis } from '../src/services/onboardingAdvice.js';
+import { applyOnboardingRecommendations, buildLocalAnalysis, calculateGoalPlan } from '../src/services/onboardingAdvice.js';
 
 const budget = {
   incomes: [{ id: 'income', name: 'Sueldo', category: 'Trabajo', amountCents: 3000000 }],
@@ -122,4 +122,47 @@ test('onboarding recommendations never over-allocate the monthly income', () => 
   });
   const assigned = adjusted.expenses[0].amountCents + adjusted.goals[0].monthlyAmountCents + adjusted.emergencyFund.monthlyAmountCents;
   assert.ok(assigned <= onboardingBudget.incomes[0].amountCents);
+});
+
+test('goal assistance calculates MXN amounts by deadline and priority', () => {
+  const onboardingBudget = {
+    incomes: [{ amountCents: 1000000 }],
+    expenses: [{ amountCents: 250000, essential: true }],
+    savings: [],
+    goals: [
+      { id: 'surgery', name: 'Mastectomia', targetCents: 6500000, monthlyAmountCents: 0, targetDate: '2028-07-03' },
+      { id: 'house', name: 'Enganche', targetCents: 40000000, monthlyAmountCents: 0, targetDate: '2030-09-26' },
+    ],
+    emergencyFund: { targetMonths: 3, currentAmountCents: 0, monthlyAmountCents: 0 },
+  };
+  const analysis = buildLocalAnalysis(onboardingBudget);
+  const plan = calculateGoalPlan(analysis, 'assisted');
+  assert.equal(analysis.surplusBeforeGoals, 750000);
+  assert.ok(plan[0].monthlyAmountCents > 0);
+  assert.ok(plan[0].monthlyAmountCents <= 6500000);
+  assert.equal(plan[0].status, 'viable');
+  assert.equal(plan[1].monthlyAmountCents, 750000 - plan[0].monthlyAmountCents);
+  assert.ok(plan[1].percentageOfAvailable > 0);
+});
+
+test('manual viability keeps user MXN amounts and calculates projections without cent errors', () => {
+  const onboardingBudget = {
+    incomes: [{ amountCents: 1000000 }],
+    expenses: [{ amountCents: 250000, essential: true }],
+    savings: [],
+    goals: [
+      { id: 'surgery', name: 'Mastectomia', targetCents: 6500000, monthlyAmountCents: 541700, targetDate: '2028-07-03' },
+      { id: 'house', name: 'Enganche', targetCents: 40000000, monthlyAmountCents: 208500, targetDate: '2030-09-26' },
+    ],
+    emergencyFund: { targetMonths: 3, currentAmountCents: 0, monthlyAmountCents: 0 },
+  };
+  const analysis = buildLocalAnalysis(onboardingBudget);
+  const plan = calculateGoalPlan(analysis, 'manual');
+  assert.equal(plan[0].monthlyAmountCents / 100, 5417);
+  assert.equal(plan[0].status, 'viable');
+  assert.equal(plan[1].monthlyAmountCents / 100, 2085);
+  assert.equal(plan[1].status, 'largo_plazo');
+  assert.equal(plan[1].exceedsAvailable, true);
+  assert.equal(plan[0].projectedAtDeadlineCents / 100, 113757);
+  assert.ok(plan[1].options.some((option) => option.type === 'aportacion'));
 });

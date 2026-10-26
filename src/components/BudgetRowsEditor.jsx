@@ -2,7 +2,7 @@ import MoneyInput from './common/MoneyInput';
 import { Plus, Trash2 } from 'lucide-react';
 import { createId, formatCurrency, sumAmounts } from '../services/budgetService';
 
-export default function BudgetRowsEditor({ section, rows, onChange, label }) {
+export default function BudgetRowsEditor({ section, rows, onChange, label, description }) {
   function updateRow(id, key, value) {
     onChange(
       rows.map((row) =>
@@ -26,7 +26,7 @@ export default function BudgetRowsEditor({ section, rows, onChange, label }) {
       <div className="section-heading">
         <div>
           <h2>{label}</h2>
-          <p>Asigna montos mensuales en pesos mexicanos.</p>
+          <p>{description || 'Asigna montos mensuales en pesos mexicanos.'}</p>
         </div>
         <button type="button" className="button button-secondary" onClick={addRow}>
           <Plus size={17} /> Agregar

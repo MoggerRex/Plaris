@@ -15,7 +15,7 @@ import { formatCurrency } from '../../services/budgetService';
 
 const COLORS = ['#106057', '#2eb6aa', '#c43785', '#4169c5', '#e3a227', '#7f5aa2'];
 
-export default function OnboardingReport({ result, applied, onApply }) {
+export default function OnboardingReport({ result }) {
   if (!result) return null;
   const { analysis } = result;
   const projection = result.projection || [];
@@ -99,9 +99,6 @@ export default function OnboardingReport({ result, applied, onApply }) {
       <div className="report-actions">
         <LineChartIcon size={18} />
         <span>Las proyecciones son estimaciones con tus aportaciones mensuales actuales.</span>
-        <button type="button" className="button button-secondary" onClick={onApply} disabled={applied}>
-          {applied ? <><Check size={16} /> Ajustes aplicados</> : 'Aplicar sugerencias de Plaris'}
-        </button>
       </div>
     </section>
   );

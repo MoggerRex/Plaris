@@ -6,7 +6,6 @@ import {
   createId,
   currentMonthKey,
   emptyBudget,
-  applySurplusAllocation,
   readBudgetState,
   validateZeroBasedBudget,
   writeBudgetState,
@@ -41,7 +40,7 @@ export function BudgetProvider({ children }) {
   }
 
   function completeOnboarding() {
-    const budget = applySurplusAllocation(data.draft, data.draft.surplusAllocation);
+    const budget = data.draft;
     const result = validateZeroBasedBudget(budget);
     if (!result.valid) throw new Error(result.errors.join(' '));
     if (result.pending > 0)

@@ -208,7 +208,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 12px 18px;
+  gap: 12px 28px;
   padding: 13px 18px;
   margin: 18px 0;
   color: #eaf9f4;
@@ -219,6 +219,31 @@
 }
 .onboarding-balance strong {
   font-size: 1.2rem;
+}
+.onboarding-balance > span,
+.onboarding-balance > .balance-metric {
+  padding-right: 22px;
+  border-right: 1px solid rgba(197, 233, 223, 0.45);
+}
+.onboarding-balance .balance-label {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.balance-metric {
+  display: grid;
+  gap: 2px;
+}
+.balance-metric small {
+  color: #c5e9df;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.balance-metric strong {
+  font-size: 1.05rem;
+}
+.balance-result {
+  border-right: 0 !important;
 }
 .onboarding-balance small {
   color: #c5e9df;
