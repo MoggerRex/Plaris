@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import { financeSections } from '../config/financeSections';
 import PageHeading from '../components/common/PageHeading';
-import MonthPicker from '../components/common/MonthPicker';
 import VisualizationPanel from '../components/finance/VisualizationPanel';
 
 export default function Charts() {
@@ -11,9 +10,6 @@ export default function Charts() {
   const [mode, setMode] = useState('graficas');
   return (
     <main className="page-shell">
-      <PageHeading title="Tablas y gráficas">
-        <MonthPicker month={state.month} onChange={state.changeMonth} />
-      </PageHeading>
       <div className="section-toolbar">
         <div className="section-tabs" role="group" aria-label="Tipo de visualización">
           <button aria-pressed={mode === 'graficas'} onClick={() => setMode('graficas')}>

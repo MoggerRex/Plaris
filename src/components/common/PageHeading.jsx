@@ -1,11 +1,10 @@
-export default function PageHeading({ eyebrow, title, children }) {
+export default function PageHeading({ title, children }) {
   return (
-    <header className="page-heading">
+    <div className="page-heading">
       <div>
-        <span className="eyebrow">{eyebrow || 'Tu espacio financiero'}</span>
         <h1>{title}</h1>
       </div>
-      <div className="heading-actions">{children}</div>
-    </header>
+      {children && <div className="heading-actions">{children}</div>}
+    </div>
   );
 }
