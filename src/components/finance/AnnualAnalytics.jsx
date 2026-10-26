@@ -1,3 +1,5 @@
+import ViewportChart from './ViewportChart';
+import { chartColors, chartTooltipStyle, useChartAnimation } from './chartTheme';
 import { useState } from 'react';
 import {
   Bar,
@@ -9,7 +11,6 @@ import {
   Line,
   LineChart,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -114,7 +115,7 @@ export default function AnnualAnalytics({
   information,
   children,
 }) {
-  const [scope, setScope] = useState('month');
+  const animation = useChartAnimation();
   const [comparison, setComparison] = useState('expense');
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -122,7 +123,7 @@ export default function AnnualAnalytics({
     month,
     transactions,
     monthlyBudgets,
-    scope,
+    scope: 'month',
     today,
     openingFunds,
     debts,
@@ -143,9 +144,9 @@ export default function AnnualAnalytics({
         periodLabel: `${start}–${isCurrent ? Number(today.slice(8)) : end} ${monthLabel}${isCurrent ? ' · Hasta hoy' : ''}`,
       };
     });
-  const period = scope === 'month' ? month : `${month.slice(0, 4)} hasta ${data.cutoff}`;
+  const period = month;
   const [plannedKey, actualKey, seriesLabel] = series[comparison];
-  const hasData = scope === 'month' ? data.hasMonthData : data.hasYearData;
+  const hasData = data.hasMonthData;
   return (
     <section className="annual-analytics" aria-label="Gráficas e indicadores financieros">
       {information}
@@ -157,13 +158,6 @@ export default function AnnualAnalytics({
             semanal: fecha real.
           </p>
         </div>
-        <label>
-          Periodo para categorías y tasa de ahorro{' '}
-          <select value={scope} onChange={(e) => setScope(e.target.value)}>
-            <option value="month">Mes seleccionado</option>
-            <option value="year">Año hasta la fecha de corte</option>
-          </select>
-        </label>
       </header>
 
       <div className="analytics-metrics">
@@ -237,7 +231,7 @@ export default function AnnualAnalytics({
             <p className="analytics-empty">Todavía no hay gastos reales en este periodo.</p>
           ) : (
             <>
-              <ResponsiveContainer
+              <ViewportChart
                 initialDimension={{ width: 640, height: 300 }}
                 width="100%"
                 height={Math.max(260, data.categoryData.length * 42)}
@@ -248,13 +242,23 @@ export default function AnnualAnalytics({
                   margin={{ left: 12, right: 24 }}
                   accessibilityLayer
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <CartesianGrid
+                    stroke={chartColors.grid}
+                    strokeDasharray="3 3"
+                    horizontal={false}
+                  />
                   <XAxis type="number" tickFormatter={axisMoney} />
                   <YAxis type="category" dataKey="category" width={110} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={moneyTooltip} />
-                  <Bar dataKey="amount" name="Gasto real" fill="#c87536" radius={[0, 5, 5, 0]} />
+                  <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
+                  <Bar
+                    {...animation}
+                    dataKey="amount"
+                    name="Gasto real"
+                    fill={chartColors.expense}
+                    radius={[0, 5, 5, 0]}
+                  />
                 </BarChart>
-              </ResponsiveContainer>
+              </ViewportChart>
               <DataTable
                 caption="Gastos por categoría"
                 headers={['Categoría', 'Gasto', '% del gasto']}
@@ -269,26 +273,34 @@ export default function AnnualAnalytics({
         </article>
 
         <article className="analytics-chart">
-          <h3>Ahorro mensual</h3>
+          <h3>Ahorro mensual · {month.slice(0, 4)}</h3>
           <p>
             Compara el ahorro neto (aportaciones menos retiros) con el plan mensual. El saldo
             inicial no cuenta como ahorro nuevo.
           </p>
-          <ResponsiveContainer
-            initialDimension={{ width: 640, height: 300 }}
-            width="100%"
-            height={300}
-          >
+          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
             <BarChart data={data.annual} accessibilityLayer>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} />
+              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
               <Legend />
-              <Bar dataKey="plannedSaving" name="Planeado" fill="#c1ccec" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="realSaving" name="Ahorro neto" fill="#536bb0" radius={[4, 4, 0, 0]} />
+              <Bar
+                {...animation}
+                dataKey="plannedSaving"
+                name="Planeado"
+                fill={chartColors.planned}
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                {...animation}
+                dataKey="realSaving"
+                name="Ahorro neto"
+                fill={chartColors.actual}
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
-          </ResponsiveContainer>
+          </ViewportChart>
           <DataTable
             caption="Ahorro mensual"
             headers={['Mes', 'Planeado', 'Aportaciones', 'Retiros', 'Ahorro neto']}
@@ -303,41 +315,39 @@ export default function AnnualAnalytics({
         </article>
 
         <article className="analytics-chart">
-          <h3>Tu ahorro hacia diciembre</h3>
+          <h3>Tu ahorro hacia diciembre · {month.slice(0, 4)}</h3>
           <p>
             La línea continua muestra el saldo de ahorro, incluido el saldo inicial y descontando
             retiros. La línea discontinua completa el escenario del plan.
           </p>
-          <ResponsiveContainer
-            initialDimension={{ width: 640, height: 300 }}
-            width="100%"
-            height={300}
-          >
+          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
             <LineChart data={data.annual} accessibilityLayer>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} />
+              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
               <Legend />
               <Line
+                {...animation}
                 type="linear"
                 dataKey="cumulative"
                 name="Saldo de ahorro"
-                stroke="#147b69"
+                stroke={chartColors.actual}
                 strokeWidth={3}
                 connectNulls={false}
               />
               <Line
+                {...animation}
                 type="linear"
                 dataKey="projected"
                 name="Escenario del plan"
-                stroke="#657bb8"
+                stroke={chartColors.projection}
                 strokeWidth={3}
                 strokeDasharray="6 4"
                 connectNulls={false}
               />
             </LineChart>
-          </ResponsiveContainer>
+          </ViewportChart>
           {data.projection === null && (
             <p>No hay base de ahorro para proyectar en el año seleccionado.</p>
           )}
@@ -353,7 +363,7 @@ export default function AnnualAnalytics({
         </article>
 
         <article className="analytics-chart">
-          <h3>Planeado y real durante el año</h3>
+          <h3>Planeado y real · {month.slice(0, 4)}</h3>
           <p>Ingresos por mes de presupuesto asignado; gastos y deudas por fecha real.</p>
           <label>
             Comparar{' '}
@@ -363,31 +373,29 @@ export default function AnnualAnalytics({
               <option value="debt">Pagos de deuda</option>
             </select>
           </label>
-          <ResponsiveContainer
-            initialDimension={{ width: 640, height: 300 }}
-            width="100%"
-            height={300}
-          >
+          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
             <BarChart data={data.annual} accessibilityLayer>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} />
+              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
               <Legend />
               <Bar
+                {...animation}
                 dataKey={plannedKey}
                 name={`${seriesLabel} planeados`}
-                fill="#b7d7d0"
+                fill={chartColors.planned}
                 radius={[4, 4, 0, 0]}
               />
               <Bar
+                {...animation}
                 dataKey={actualKey}
                 name={`${seriesLabel} reales`}
-                fill="#147b69"
+                fill={chartColors.actual}
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
-          </ResponsiveContainer>
+          </ViewportChart>
           <DataTable
             caption={seriesLabel}
             headers={['Mes', 'Planeado', 'Real']}
@@ -414,7 +422,7 @@ export default function AnnualAnalytics({
             <>
               <div className="weekly-chart-scroll">
                 <div className="weekly-chart-canvas">
-                  <ResponsiveContainer
+                  <ViewportChart
                     initialDimension={{ width: 640, height: 320 }}
                     width="100%"
                     height={320}
@@ -424,7 +432,11 @@ export default function AnnualAnalytics({
                       margin={{ top: 35, right: 30, bottom: 15, left: 10 }}
                       accessibilityLayer
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid
+                        stroke={chartColors.grid}
+                        strokeDasharray="3 3"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="periodLabel"
                         interval={0}
@@ -439,11 +451,16 @@ export default function AnnualAnalytics({
                       />
                       <Tooltip content={<WeeklyTooltip />} />
                       <ReferenceLine y={0} stroke="#64748b" />
-                      <Bar dataKey="available" name="Dinero disponible" maxBarSize={75}>
+                      <Bar
+                        {...animation}
+                        dataKey="available"
+                        name="Dinero disponible"
+                        maxBarSize={75}
+                      >
                         {weeks.map((week) => (
                           <Cell
                             key={week.label}
-                            fill={week.available < 0 ? '#b42318' : '#147b69'}
+                            fill={week.available < 0 ? chartColors.negative : chartColors.actual}
                           />
                         ))}
                         <LabelList
@@ -455,7 +472,7 @@ export default function AnnualAnalytics({
                         />
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ViewportChart>
                 </div>
               </div>
               <DataTable
@@ -473,7 +490,7 @@ export default function AnnualAnalytics({
       </div>
       {!hasData && (
         <p className="analytics-empty">
-          No hay movimientos reales en el periodo seleccionado. Registra o confirma movimientos para
+          No hay movimientos reales en el mes seleccionado. Registra o confirma movimientos para
           alimentar las estadísticas.
         </p>
       )}

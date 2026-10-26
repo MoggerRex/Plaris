@@ -128,3 +128,50 @@ tfoot {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.chart-panel,
+.analytics-chart,
+.analytics-metric {
+  animation: chart-appear 650ms ease-out both;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.chart-panel:hover,
+.analytics-chart:hover {
+  border-color: #a8c5b2;
+  box-shadow: 0 4px 16px #123e340a;
+}
+
+@keyframes chart-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-panel,
+  .analytics-chart,
+  .analytics-metric {
+    animation: none;
+    transition: none;
+  }
+}
+
+.viewport-chart {
+  opacity: 0;
+  transition: opacity 650ms ease-out;
+}
+.viewport-chart-visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewport-chart {
+    opacity: 1;
+    transition: none;
+  }
+}
