@@ -26,7 +26,11 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }) {
       className="app-header"
       initial={false}
       animate={{
-        gridTemplateColumns: isOpen ? '260px auto 1fr' : '80px auto 1fr',
+        gridTemplateColumns: onboardingComplete
+          ? isOpen
+            ? '260px auto 1fr'
+            : '80px auto 1fr'
+          : '1fr',
       }}
       transition={animationConfig}
     >
@@ -34,9 +38,10 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }) {
         className="header-brand-section"
         initial={false}
         animate={{
-          width: isOpen ? '260px' : '80px',
+          width: onboardingComplete ? (isOpen ? '260px' : '80px') : '100%',
         }}
         transition={animationConfig}
+        style={{ borderRight: onboardingComplete ? '1px solid #19776c' : 'none' }}
       >
         {onboardingComplete ? (
           <div className="brand-controls-wrapper">
@@ -53,25 +58,28 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }) {
             </button>
           </div>
         ) : (
-          <div className="brand">
-            <span className="phi-logo">Φ</span> <span className="brand-title-large">PLARIS </span>
+          <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px' }}>
+            <span className="phi-logo">Φ</span> <span className="brand-title-large">PLARIS</span>
           </div>
         )}
       </motion.div>
 
-      <nav className="header-nav-section" aria-label="Navegación principal">
-        {onboardingComplete &&
-          navigation.map(({ path, label, icon: Icon }) => (
-            <NavLink key={path} to={path + location.search} title={label}>
-              <Icon />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-      </nav>
+      {onboardingComplete && (
+        <>
+          <nav className="header-nav-section" aria-label="Navegación principal">
+            {navigation.map(({ path, label, icon: Icon }) => (
+              <NavLink key={path} to={path + location.search} title={label}>
+                <Icon />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-      <div className="header-tagline-section">
-        <p>FORMULA PLANES FINANCIEROS CON NUESTRO AGENTE PLARIS</p>
-      </div>
+          <div className="header-tagline-section">
+            <p>FORMULA PLANES FINANCIEROS CON NUESTRO AGENTE PLARIS</p>
+          </div>
+        </>
+      )}
     </motion.header>
   );
 }
