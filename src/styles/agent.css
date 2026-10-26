@@ -1,5 +1,36 @@
 .agent-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   width: 100%;
+  min-height: 0;
+}
+
+/* PANTALLA DEL AGENTE SIN SCROLL DE PÁGINA
+   El layout se fija al alto de la ventana y la página del agente llena lo que queda
+   debajo del header. (Solo aplica a páginas que contienen .agent-shell.) */
+.app-layout:has(.agent-shell) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-layout:has(.agent-shell) .app-header {
+  flex-shrink: 0;
+}
+
+.app-layout:has(.agent-shell) .app-body {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app-layout:has(.agent-shell) .route-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* 1. SECCIÓN SUPERIOR COMPACTA (A LO LARGO DE LA PÁGINA) */
@@ -9,6 +40,7 @@
   align-items: center;
   width: 100%;
   min-height: 52px;
+  flex-shrink: 0;
   background: #f0f7f4;
   border-bottom: 1px solid #9ec5bd;
   overflow: hidden;
@@ -95,15 +127,81 @@
 
 /* 2. SECCIÓN INFERIOR */
 .agent-body {
+  --charts-width: clamp(320px, 30vw, 560px);   /* ancho del panel abierto */
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
+  grid-template-columns: var(--charts-width) 1fr;
+  grid-template-rows: minmax(0, 1fr);   /* la fila mide lo que queda de pantalla */
+  flex: 1;
+  min-height: 0;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.agent-charts {
+/* Panel cerrado: la columna del panel colapsa a 0 y el chat ocupa todo el ancho */
+.agent-body.charts-collapsed {
+  grid-template-columns: 0px 1fr;
+}
+
+/* Contenedor que recorta el panel mientras se abre/cierra */
+.agent-charts-wrap {
   min-width: 0;
-  padding: clamp(18px, 2.5vw, 40px);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;                            /* SCROLL INTERNO del dashboard */
+  scrollbar-width: thin;
+  scrollbar-color: #9ec5bd transparent;
   border-right: 1px solid #9ec5bd;
   box-sizing: border-box;
+  transition: visibility 0s;
+}
+
+.agent-body.charts-collapsed .agent-charts-wrap {
+  border-right-width: 0;
+  visibility: hidden;                          /* saca del foco de teclado lo que está oculto */
+  transition: visibility 0s linear 0.3s;       /* se oculta al terminar la animación */
+}
+
+/* Ancho FIJO: las gráficas no se aplastan ni se redibujan mientras se anima */
+.agent-charts {
+  width: var(--charts-width);
+  padding: clamp(18px, 2.5vw, 40px);
+  box-sizing: border-box;
+}
+
+/* Flecha para abrir/cerrar, sobre la línea divisoria */
+.charts-toggle {
+  position: absolute;
+  top: 50%;                            /* centrada en la altura del área visible */
+  left: var(--charts-width);
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #ffffff;
+  color: #105f56;
+  border: 1px solid #86bcb0;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(16, 95, 86, 0.18);
+  cursor: pointer;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s;
+}
+
+.charts-toggle:hover {
+  background: #e3f0e9;
+  border-color: #105f56;
+}
+
+.charts-toggle:focus-visible {
+  outline: 2px solid #105f56;
+  outline-offset: 2px;
+}
+
+/* Cerrado: la flecha se queda pegada al borde izquierdo */
+.agent-body.charts-collapsed .charts-toggle {
+  left: 24px;
 }
 
 .agent-charts > h2 {
@@ -134,7 +232,19 @@
 
 .agent-workspace {
   min-width: 0;
+  min-height: 0;
   padding: clamp(22px, 4vw, 65px);
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;                 /* no se mueve con el dashboard; solo scrollea si la respuesta es larga */
+  scrollbar-width: thin;
+  scrollbar-color: #9ec5bd transparent;
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cerrado: el contenido del chat queda centrado (máx. 960px) */
+.agent-body.charts-collapsed .agent-workspace {
+  padding-inline: max(clamp(22px, 4vw, 65px), calc((100% - 960px) / 2));
 }
 
 .agent-workspace > h2 {
@@ -216,9 +326,54 @@
     flex-direction: column-reverse;
   }
 
-  .agent-charts {
+  /* En móvil el panel siempre se ve apilado debajo del chat; sin flecha */
+  .charts-toggle {
+    display: none;
+  }
+
+  .agent-charts-wrap,
+  .agent-body.charts-collapsed .agent-charts-wrap {
     border-right: 0;
     border-top: 1px solid #9ec5bd;
+    visibility: visible;
+    transition: none;
+  }
+
+  .agent-charts {
+    width: 100%;
+  }
+
+  .app-layout:has(.agent-shell) {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-layout:has(.agent-shell) .route-content {
+    display: block;
+  }
+
+  .agent-shell {
+    display: block;
+  }
+
+  .agent-charts-wrap,
+  .agent-body.charts-collapsed .agent-charts-wrap,
+  .agent-workspace {
+    overflow: visible;
+  }
+
+  .agent-body.charts-collapsed .agent-workspace {
+    padding-inline: clamp(22px, 4vw, 65px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-body,
+  .agent-workspace,
+  .charts-toggle {
+    transition: none;
   }
 }
 
