@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Pencil, FileClock, FolderUser, CornerDownLeft } from 'lucide-react';
 import { useAdvice } from '../../hooks/useAdvice';
 import { toPlannerData } from '../../services/financeAdapter';
 import AdviceResult from './AdviceResult';
@@ -60,24 +60,24 @@ export default function AgentWorkspace({ month, budget, profile, debts }) {
               disabled={loading}
               aria-label="Crear mi plan"
             >
-              <ArrowUpRight size={18} />
+              <CornerDownLeft size={18} />
             </button>
           </div>
         </div>
 
-        {/* Botones inferiores de acciones rápidas totalmente centrados */}
+        {/* Botones inferiores de acciones rápidas con iconos de Lucide */}
         <div className="agent-quick-actions">
           <Link to={'/dashboard?mes=' + month} className="pill-button">
             <span>Φ</span> Agente
           </Link>
           <Link to={'/perfil/resumen?mes=' + month} className="pill-button">
-            <span>✏️</span> Agendar
+            <Pencil size={16} /> Agendar
           </Link>
           <Link to={'/analisis?mes=' + month} className="pill-button">
-            <span>📄</span> Historial
+            <FileClock size={16} /> Historial
           </Link>
           <Link to={'/perfil?mes=' + month} className="pill-button">
-            <span>🗂️</span> Mis datos
+            <FolderUser size={16} /> Mis datos
           </Link>
         </div>
       </form>
