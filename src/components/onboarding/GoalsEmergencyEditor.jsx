@@ -187,7 +187,7 @@ export default function GoalsEmergencyEditor({
                 <article className="goal-feedback" key={item.id}>
                   <p><b>{goal?.name || 'Meta'}:</b> {item.aportacionMensualMXN != null && <>{goalAnalysis.mode === 'manual' ? 'Tu aportación actual' : 'Aportación calculada'}: ${Number(item.aportacionMensualMXN).toLocaleString('es-MX', { maximumFractionDigits: 2 })} MXN ({item.porcentajeDisponible || 0}% del disponible). </>}{item.explicacion}</p>
                   <p>{item.recomendacion}</p>
-                  {goalAnalysis.mode === 'manual' && item.opciones?.length > 0 && (
+                  {goalAnalysis.mode === 'manual' && item.estado !== 'viable' && item.opciones?.length > 0 && (
                     <div className="goal-options">
                       <strong>Opciones calculadas</strong>
                       {item.opciones.map((option) => (
