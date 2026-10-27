@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Reorder } from 'framer-motion';
 import { useMonthBudget } from '../hooks/useMonthBudget';
 import AgentWorkspace from '../components/agent/AgentWorkspace';
 import ComparisonChart from '../components/finance/ComparisonChart';
@@ -12,6 +13,9 @@ export default function Dashboard() {
 
   // Panel "Cada peso cuenta": abierto por defecto
   const [chartsOpen, setChartsOpen] = useState(true);
+  
+  // Estado para el orden de las gráficas en el dashboard
+  const [cardOrder, setCardOrder] = useState(['planeas', 'llevas']);
 
   return (
     <main className="agent-shell">
@@ -35,9 +39,43 @@ export default function Dashboard() {
           <aside className="agent-charts">
             <span className="eyebrow">El panorama de tu mes</span>
             <h2>Cada peso cuenta.</h2>
-            <p>Tu presupuesto y tus movimientos, en perspectiva.</p>
-            <ComparisonChart data={comparison} title="Lo que planeas" series={['Planeado']} />
-            <ComparisonChart data={comparison} title="Lo que llevas" series={['Real']} />
+            <p>Tu presupuesto y tus movimientos, en perspectiva. (Arrastra hacia arriba o abajo para ordenar)</p>
+
+            {/* Grupo de elementos reordenables con animación */}
+            <Reorder.Group
+              axis="y"
+              values={cardOrder}
+              onReorder={setCardOrder}
+              style={{ listStyle: 'none', padding: 0, margin: '16px 0' }}
+            >
+              {cardOrder.map((id) => (
+                <Reorder.Item
+                  key={id}
+                  value={id}
+                  whileDrag={{
+                    scale: 1.04,
+                    boxShadow: '0 20px 32px rgba(16, 95, 86, 0.28)',
+                    cursor: 'grabbing',
+                    zIndex: 50,
+                  }}
+                  style={{
+                    cursor: 'grab',
+                    listStyle: 'none',
+                    marginBottom: '16px',
+                    borderRadius: '9px',
+                    background: 'transparent',
+                    userSelect: 'none',
+                  }}
+                >
+                  {id === 'planeas' ? (
+                    <ComparisonChart data={comparison} title="Lo que planeas" series={['Planeado']} />
+                  ) : (
+                    <ComparisonChart data={comparison} title="Lo que llevas" series={['Real']} />
+                  )}
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+
             <Link className="button button-secondary" to={'/graficas?mes=' + month}>
               Ver tablas y gráficas
             </Link>

@@ -15,31 +15,34 @@ export const agentShortcuts = [
     id: 'agente',
     label: 'Agente',
     icon: null,
-    hint: 'Elige una plantilla para que Plaris analice el flujo de tu dinero.',
+    titleLine1: '¿QUÉ QUIERES',
+    titleLine2: 'COMPRAR?',
+    hint: 'Pregunta rápida: ¿No sabes si comprarlo? Plaris lo revisa con tus datos.',
   },
   {
     id: 'metas',
     label: 'Metas',
     icon: Target,
+    titleLine1: '¿ANALIZAMOS TUS',
+    titleLine2: 'METAS?',
     hint: 'Analiza una meta que ya tienes o crea una nueva; se guardará en tu perfil.',
   },
   {
     id: 'reportes',
     label: 'Reportes',
     icon: FileText,
+    titleLine1: '¿QUÉ REPORTE',
+    titleLine2: 'NECESITAS?',
     hint: 'Elige una plantilla o una meta y el tipo de reporte que quieres.',
   },
   {
     id: 'agendar',
-    label: 'Agendar',
+    label: 'Registrar',
     icon: CalendarPlus,
+    titleLine1: '¿REGISTRAMOS UN',
+    titleLine2: 'MOVIMIENTO?',
     hint: 'Registra rápido un gasto o un ingreso.',
   },
-];
-
-export const planOptions = [
-  { value: 'estandar', label: 'Estándar' },
-  { value: 'avanzado', label: 'Avanzado' },
 ];
 
 export const reportTypes = [
@@ -48,7 +51,7 @@ export const reportTypes = [
   { id: 'tracking', label: 'Reporte de tracking', hint: 'Cómo avanzas con el tiempo', icon: LineChart },
 ];
 
-/** Tipos de registro de "Agendar", con sus categorías. Reemplaza las categorías por las tuyas si ya las tienes. */
+/** Tipos de registro de "Agendar", con sus categorías. */
 export const entryTypes = [
   {
     id: 'expense',

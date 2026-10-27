@@ -788,3 +788,88 @@
     display: none;
   }
 }
+
+/* ----- Agente: pregunta rápida de compra ----- */
+.agent-purchase-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+/* Campo de situación: una fila al inicio, crece al escribir y lleva el botón de enviar dentro */
+.agent-note-bar {
+  align-items: flex-end; /* el botón se queda abajo a la derecha mientras crece */
+}
+
+/* Selector reforzado (.agent-field ...) para ganarle a cualquier regla genérica de textarea */
+.agent-field .agent-note-bar textarea {
+  min-height: 36px; /* 1 fila */
+  max-height: 220px;
+  padding: 7px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #86bcb0 transparent;
+}
+
+@media (max-width: 700px) {
+  .agent-purchase-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-note-bar {
+    flex-wrap: nowrap;
+  }
+}
+
+
+/* ============================================================
+   CENTRADO VERTICAL DEL FORMULARIO (sin scroll inicial)
+   ============================================================ */
+.agent-workspace {
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(12px, 2vh, 28px); /* antes 65px arriba y abajo: empujaba todo hacia abajo */
+}
+
+.agent-workspace > * {
+  flex-shrink: 0;
+}
+
+/* Márgenes automáticos arriba (título) y abajo (formulario + atajos):
+   centran el bloque en la altura disponible. Si no cabe, se alinea arriba y
+   el chat hace scroll por dentro. */
+.agent-workspace > h2 {
+  margin: auto 0 clamp(10px, 2.2vh, 24px);
+  font-size: clamp(2.2rem, min(4.7vw, 10vh), 5.5rem); /* el título también se adapta a la altura */
+}
+
+.agent-workspace > .agent-composer {
+  margin-bottom: auto;
+}
+
+/* Tarjetas un poco más compactas */
+.agent-form-card {
+  gap: 14px;
+  padding: 18px 22px;
+}
+
+/* ============================================================
+   METAS: todos los campos en una sola fila
+   ============================================================ */
+.agent-goal-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end; /* si una etiqueta ocupa 2 líneas, los campos siguen alineados */
+}
+
+.agent-goal-grid .agent-field {
+  align-content: end;
+}
+
+@media (max-width: 1300px) {
+  .agent-goal-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+}

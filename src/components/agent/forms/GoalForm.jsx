@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Target } from 'lucide-react';
+import { Plus, Target, PencilSparkles, ScanEye } from 'lucide-react';
 import MoneyInput from '../../common/MoneyInput';
 
 const BLANK = { name: '', cost: 0, deadlineDays: '', currentSaving: 0, protectedReserve: 0 };
@@ -56,35 +56,35 @@ export default function GoalForm({ goals = [], busy, onSubmit }) {
           </div>
         </div>
 
-        {isExisting && (
-          <Field label="Elige tu meta" wide>
-            <select
-              value={selectedId}
-              onChange={(event) => setSelectedId(event.target.value)}
-              disabled={busy || goals.length === 0}
-            >
-              <option value="">
-                {goals.length ? 'Selecciona una meta…' : 'Aún no tienes metas guardadas'}
-              </option>
-              {goals.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
-
-        <div className="agent-field-grid">
+        {/* Los 5 campos van en una sola fila (en pantallas angostas se acomodan solos) */}
+        <div className="agent-field-grid agent-goal-grid">
           <Field label="Nombre de la meta">
-            <input
-              type="text"
-              value={values.name}
-              onChange={(event) => set('name')(event.target.value)}
-              readOnly={isExisting}
-              placeholder="Ej. Laptop"
-              required={!isExisting}
-            />
+            {isExisting ? (
+              // Meta existente: el nombre es la lista; al elegir, los demás campos se llenan solos
+              <select
+                value={selectedId}
+                onChange={(event) => setSelectedId(event.target.value)}
+                disabled={busy || goals.length === 0}
+                required
+              >
+                <option value="">
+                  {goals.length ? 'Elige tu meta…' : 'Sin metas creadas'}
+                </option>
+                {goals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={draft.name}
+                onChange={(event) => set('name')(event.target.value)}
+                placeholder="Ej. Laptop"
+                required
+              />
+            )}
           </Field>
           <Field label="Costo (MXN)">
             <MoneyInput value={values.cost} onChange={set('cost')} readOnly={isExisting} />
@@ -119,11 +119,19 @@ export default function GoalForm({ goals = [], busy, onSubmit }) {
         <div className="agent-form-actions">
           <p className="agent-form-hint">
             {isExisting
-              ? 'Los datos se llenan solos al elegir la meta.'
+              ? 'Elige tu meta en el nombre; los demás datos se llenan solos.'
               : 'Al enviarla, la meta se guardará en tu perfil, en Mis plantillas de metas.'}
           </p>
           <button type="submit" className="button button-primary" disabled={busy || !valid}>
-            {isExisting ? 'Analizar meta' : 'Crear y analizar meta'}
+            {isExisting ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <ScanEye size={16} /> Analizar meta
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <PencilSparkles size={16} /> Crear y analizar meta
+              </span>
+            )}
           </button>
         </div>
       </div>
