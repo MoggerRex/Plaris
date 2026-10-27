@@ -37,7 +37,7 @@ export function toPlannerData(budget, profile, debts, month, context = '') {
     startDate: `${month}-01`,
     incomes: mapRows(budget.incomes),
     expenses: mapRows(budget.expenses),
-    debts,
+    debts: (debts || []).map((debt) => ({ ...debt, dueDate: debt.dueDate || null })),
     savings: Number(profile.savings || 0),
     reserve: Number(profile.reserve || 0),
     plannedSavings: sumAmounts(budget.savings) / 100,

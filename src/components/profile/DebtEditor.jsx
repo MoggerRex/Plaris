@@ -2,13 +2,13 @@ import { Plus, Trash2 } from 'lucide-react';
 import { createId } from '../../services/budgetService';
 
 const numericFields = [
-  ['balance', 'Saldo pendiente (MXN)'],
+  ['balance', 'Monto a cubrir (MXN)'],
   ['payment', 'Pago mensual (MXN)'],
   ['minimum', 'Pago mínimo (MXN)'],
   ['rate', 'Tasa de interés (%)'],
 ];
 
-export default function DebtEditor({ rows, onChange }) {
+export default function DebtEditor({ rows, onChange, onboarding = false }) {
   function update(id, key, value) {
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   }
@@ -16,7 +16,16 @@ export default function DebtEditor({ rows, onChange }) {
   function add() {
     onChange([
       ...rows,
-      { id: createId(), name: '', balance: 0, payment: 0, minimum: 0, rate: 0, rateType: 'anual' },
+      {
+        id: createId(),
+        name: '',
+        balance: 0,
+        payment: 0,
+        minimum: 0,
+        rate: 0,
+        rateType: 'anual',
+        dueDate: '',
+      },
     ]);
   }
 
@@ -25,7 +34,10 @@ export default function DebtEditor({ rows, onChange }) {
       <div className="section-heading">
         <div>
           <h2>Tus deudas</h2>
-          <p>Separa los pagos de deuda de los gastos para evitar contarlos dos veces.</p>
+          <p>
+            Registra el monto a cubrir, fecha límite, tasa y pagos previstos. La deuda se analiza
+            por separado de tus gastos para evitar contarla dos veces.
+          </p>
         </div>
         <button type="button" className="button button-secondary" onClick={add}>
           <Plus size={16} /> Agregar deuda
@@ -57,6 +69,17 @@ export default function DebtEditor({ rows, onChange }) {
               />
             </label>
           ))}
+          {onboarding && (
+            <label className="field">
+              <span>Fecha límite</span>
+              <input
+                type="date"
+                value={row.dueDate || ''}
+                onChange={(event) => update(row.id, 'dueDate', event.target.value)}
+                required
+              />
+            </label>
+          )}
           <label className="field">
             <span>Periodo de la tasa</span>
             <select

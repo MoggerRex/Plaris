@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import BudgetRowsEditor from '../../components/BudgetRowsEditor';
 import GoalsEmergencyEditor from '../../components/onboarding/GoalsEmergencyEditor';
 import OnboardingReport from '../../components/onboarding/OnboardingReport';
+import DebtEditor from '../../components/profile/DebtEditor';
 import { useBudget } from '../../context/useBudget';
 import {
   formatCurrency,
@@ -51,7 +52,15 @@ const steps = [
 export default function Onboarding() {
   const { step: routeStep = 'ingresos' } = useParams();
   const navigate = useNavigate();
-  const { onboardingComplete, draft, updateDraft, completeOnboarding, storageError } = useBudget();
+  const {
+    onboardingComplete,
+    draft,
+    deudas_activas: debts,
+    updateDraft,
+    updateDebts,
+    completeOnboarding,
+    storageError,
+  } = useBudget();
   const [showGuide, setShowGuide] = useState(true);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -65,7 +74,7 @@ export default function Onboarding() {
   const allocatedDraft = useMemo(() => draft, [draft]);
   const validation = validateZeroBasedBudget(allocatedDraft);
   const validationErrors = validation.errors;
-  const stepError = getStepError(step, draft);
+  const stepError = getStepError(step, draft, debts);
 
   useEffect(() => {
     if (step.slug !== 'revision') return undefined;
@@ -182,13 +191,22 @@ export default function Onboarding() {
             onEmergencyChange={(value) => updateSection('emergencyFund', value)}
           />
         ) : (
-          <BudgetRowsEditor
-            label={step.title}
-            section={step.section}
-            rows={draft[step.section]}
-            description={step.description}
-            onChange={(rows) => updateSection(step.section, rows)}
-          />
+          <>
+            <BudgetRowsEditor
+              label={step.title}
+              section={step.section}
+              rows={draft[step.section]}
+              description={step.description}
+              onChange={(rows) => updateSection(step.section, rows)}
+            />
+            {step.section === 'expenses' && (
+              <DebtEditor
+                rows={debts}
+                onChange={updateDebts}
+                onboarding
+              />
+            )}
+          </>
         )
       ) : (
         <>
@@ -359,7 +377,7 @@ function ReviewTotal({ label, amount, tone }) {
   );
 }
 
-function getStepError(step, draft) {
+function getStepError(step, draft, debts = []) {
   if (step.section === 'intro') return '';
   if (step.section === 'incomes') {
     if (!draft.incomes.some((item) => item.name.trim() && item.amountCents > 0)) {
@@ -368,6 +386,16 @@ function getStepError(step, draft) {
     return draft.incomes.some((item) => item.amountCents > 0 && !item.name.trim())
       ? 'Completa el nombre de cada ingreso con monto.'
       : '';
+  }
+  if (step.section === 'expenses') {
+    const invalidDebt = debts.some(
+      (debt) =>
+        (debt.name?.trim() || debt.balance > 0 || debt.payment > 0 || debt.rate > 0) &&
+        (!debt.name?.trim() || debt.balance <= 0 || !debt.dueDate),
+    );
+    if (invalidDebt) {
+      return 'Completa nombre, monto a cubrir y fecha límite de cada deuda activa.';
+    }
   }
   if (step.section) {
     if (step.section === 'savings') {
