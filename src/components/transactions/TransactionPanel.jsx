@@ -68,9 +68,11 @@ export default function TransactionPanel({
             name="description"
             defaultValue={selected.description || ''}
             key={`${editingTransaction?.id || 'new'}-description`}
-            placeholder="Detalle (opcional)"
+            placeholder="Ej. Despensa, papitas Sabritas o entradas al cine"
+            maxLength={300}
           />
         </label>
+
         <label className="field">
           <span>Monto (MXN)</span>
           <input

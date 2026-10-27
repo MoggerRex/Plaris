@@ -20,10 +20,10 @@ function planStatus(item) {
   return 'Ingreso planeado recibido';
 }
 
-export default function ComparisonTable({ data }) {
+export default function ComparisonTable({ data, compact = false }) {
   return (
     <section className="panel comparison-table-panel">
-      <h2>Planeado y real</h2>
+      {!compact && <h2>Planeado y real</h2>}
       <div
         className="table-scroll"
         role="region"
@@ -51,11 +51,13 @@ export default function ComparisonTable({ data }) {
           </tbody>
         </table>
       </div>
-      <p className="empty-state">
-        El estado compara los movimientos registrados con el plan completo del mes. En ahorros
-        muestra cuánto falta para la meta; en gastos, cuánto queda del presupuesto o cuánto se ha
-        excedido.
-      </p>
+      {!compact && (
+        <p className="empty-state">
+          El estado compara los movimientos registrados con el plan completo del mes. En ahorros
+          muestra cuánto falta para la meta; en gastos, cuánto queda del presupuesto o cuánto se ha
+          excedido.
+        </p>
+      )}
     </section>
   );
 }

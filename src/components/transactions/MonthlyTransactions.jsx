@@ -15,7 +15,7 @@ export default function MonthlyTransactions({ state, plannedContent }) {
     const transaction = {
       type: String(form.get('type')),
       category: String(form.get('category') || '').trim(),
-      description: editing?.description || '',
+      description: String(form.get('description') || '').trim(),
       date: String(form.get('date')),
       amountCents: amountToCents(form.get('amount')),
     };

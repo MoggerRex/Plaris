@@ -1,5 +1,5 @@
 import { Suspense, useLayoutEffect, useRef, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../Navbar';
 import SymbolIntro from '../../animations/SymbolIntro';
 import TemplateSidebar from '../templates/TemplateSidebar';
@@ -31,6 +31,7 @@ function ReadyContent({ readyRef, children }) {
 }
 
 export default function AppLayout() {
+  const { pathname } = useLocation();
   const rootRef = useRef(null);
   const readyRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,7 +41,7 @@ export default function AppLayout() {
   const toggleSidebar = () => setSidebarOpen((open) => !open);
 
   return (
-    <div className="app-layout" ref={rootRef}>
+    <div className={`app-layout${pathname === '/analisis' ? ' analysis-route' : ''}`} ref={rootRef}>
       <SymbolIntro rootRef={rootRef} readyRef={readyRef} />
       <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
       <div className={'app-body' + (sidebarOpen && onboardingComplete ? ' sidebar-open' : '')}>

@@ -1,6 +1,7 @@
 import { financeSections } from '../config/financeSections.js';
 import { plannedSavingsRows, primaryBudgetGoal } from './budgetConnections.js';
 import { sumAmounts } from './budgetService.js';
+import { analysisMovements, expenseBreakdown } from './analysisMovements.js';
 
 export function buildComparison(budget, transactions, month) {
   return financeSections
@@ -59,8 +60,24 @@ export function toPlannerData(budget, profile, debts, month, context = '') {
   };
 }
 
-export function selectedFinanceContext(budget, debts, comparison, sections, month) {
+export function selectedFinanceContext(
+  budget,
+  debts,
+  comparison,
+  sections,
+  month,
+  transactions = [],
+) {
   const context = { periodo: month, moneda: 'MXN', secciones: {} };
+  const movements = analysisMovements(transactions, sections, month);
+  context.movimientosReales = movements.map((item) => ({
+    fecha: item.date,
+    tipo: item.type,
+    categoria: item.category,
+    descripcion: item.description || '',
+    monto: item.amountCents / 100,
+  }));
+  if (sections.includes('expenses')) context.desgloseGastos = expenseBreakdown(budget, movements);
   for (const key of sections) {
     if (key === 'debts') {
       context.secciones.deudas = debts;
@@ -71,6 +88,7 @@ export function selectedFinanceContext(budget, debts, comparison, sections, mont
             concepto: row.name,
             categoria: row.category,
             montoMensual: row.amountCents / 100,
+            ...(key === 'expenses' ? { noNegociable: row.essential !== false } : {}),
           }),
         ),
         totales: comparison.find((item) => item.key === key),

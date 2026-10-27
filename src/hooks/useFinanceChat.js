@@ -16,15 +16,24 @@ export function useFinanceChat(context) {
     setLoading(true);
     const active = new AbortController();
     controller.current = active;
-    const timeout = setTimeout(() => active.abort(), 120000);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      active.abort();
+    }, 120000);
     try {
-      const answer = await requestChat(next, context, active.signal);
+      const answer = await requestChat(next, context, active.signal, (content) => {
+        if (!active.signal.aborted && controller.current === active)
+          setMessages([...next, { role: 'assistant', content }]);
+      });
       if (!active.signal.aborted) setMessages([...next, { role: 'assistant', content: answer }]);
     } catch (failure) {
       if (controller.current === active) {
         setError(
           failure.name === 'AbortError'
-            ? 'Se agotó el tiempo de respuesta. Puedes volver a intentarlo.'
+            ? timedOut
+              ? 'Se agotó el tiempo de respuesta. Puedes volver a intentarlo.'
+              : 'Respuesta detenida. Puedes hacer otra pregunta.'
             : failure instanceof TypeError
               ? 'No se pudo conectar con Ollama en localhost:11434.'
               : failure.message,
@@ -35,5 +44,5 @@ export function useFinanceChat(context) {
       if (controller.current === active) setLoading(false);
     }
   }
-  return { messages, loading, error, send };
+  return { messages, loading, error, send, stop: () => controller.current?.abort() };
 }

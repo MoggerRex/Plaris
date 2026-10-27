@@ -79,6 +79,18 @@ export default function BudgetTransactionPanel({
             </label>
 
             <label className="field">
+              <span>Descripción del movimiento</span>
+              <input
+                name="description"
+                defaultValue={selected.description || ''}
+                key={`${editingTransaction?.id || 'new'}-description`}
+                placeholder="Ej. Despensa, papitas Sabritas o entradas al cine"
+                maxLength={300}
+              />
+              <small>Describe qué compraste para recibir recomendaciones más precisas.</small>
+            </label>
+
+            <label className="field">
               <span>Monto (MXN)</span>
               <input
                 name="amount"
@@ -157,6 +169,7 @@ export default function BudgetTransactionPanel({
                 <article className="budget-history-item" key={item.id}>
                   <div>
                     <strong>{item.category}</strong>
+                    {item.description && <small>{item.description}</small>}
                     <small>
                       {new Date(item.date + 'T12:00:00').toLocaleDateString('es-MX', {
                         day: 'numeric',

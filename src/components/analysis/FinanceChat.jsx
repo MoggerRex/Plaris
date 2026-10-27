@@ -1,79 +1,155 @@
-import { useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ArrowUp, Check, Save, Sparkles, Square } from 'lucide-react';
 import { useFinanceChat } from '../../hooks/useFinanceChat';
 
-export default function FinanceChat({ context, disabled, onSave }) {
+const analyzeQuestion =
+  'Analiza mis movimientos reales del mes y el presupuesto completo. Identifica oportunidades de ahorro por descripción dentro de cada categoría, incluso las necesarias. Respeta las prioridades de lo planeado. Usa los montos y porcentajes calculados, sugiere ajustes sin eliminar todos mis gustos y pide detalle si falta información.';
+
+export default function FinanceChat({ ref, context, onSave }) {
   const [question, setQuestion] = useState('');
   const [saved, setSaved] = useState(false);
-  const { messages, loading, error, send } = useFinanceChat(context);
+  const { messages, loading, error, send, stop } = useFinanceChat(context);
+  const input = useRef(null);
+  const log = useRef(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      prepareQuestion(text) {
+        setQuestion(text);
+        requestAnimationFrame(() => input.current?.focus());
+      },
+    }),
+    [],
+  );
+  useEffect(() => {
+    if (log.current) log.current.scrollTop = log.current.scrollHeight;
+  }, [messages, loading]);
 
-  function submit(event) {
-    event.preventDefault();
-    send(question);
+  function ask(text) {
+    if (!text.trim() || loading) return;
+    send(text);
     setQuestion('');
     setSaved(false);
   }
 
   return (
-    <section className="panel chat-panel">
-      <span className="eyebrow">Comprende tus datos</span>
-      <h2>¿Qué análisis necesitas?</h2>
-      <p>
-        Selecciona las secciones que quieres analizar. El chat usa Ollama local y recibe únicamente
-        esos campos.
-      </p>
+    <div className="analysis-chat">
+      <div className="analysis-chat-context">
+        <span>Contexto completo · {context.periodo}</span>
+        <span>{context.movimientosReales.length} movimientos · MXN</span>
+      </div>
       <div
-        className="chat-messages"
+        ref={log}
+        className="analysis-chat-log"
         role="log"
         aria-live="polite"
         aria-label="Conversación con Plaris"
       >
         {!messages.length && (
-          <p className="empty-state">
-            Prueba: “¿Cuál es mi mayor gasto?” o “Explícame la diferencia entre planeado y real”.
-          </p>
+          <div className="analysis-chat-welcome">
+            <div className="analysis-assistant-symbol">Φ</div>
+            <h3>
+              Cuidemos lo importante.
+              <br />
+              Ajustemos los gustos.
+            </h3>
+            <p>
+              Veo tu presupuesto, movimientos, deudas y metas del mes. Exploremos qué compras
+              podrías ajustar para acercarte a tus objetivos.
+            </p>
+            <button className="button button-primary" onClick={() => ask(analyzeQuestion)}>
+              <Sparkles size={16} />
+              Analizar mis gastos
+            </button>
+            <p className="analysis-cell-note">
+              Las descripciones ayudan a distinguir la despensa de las botanas, aunque ambas estén
+              en alimentación.
+            </p>
+          </div>
         )}
         {messages.map((item, index) => (
-          <article className={'chat-message ' + item.role} key={index}>
-            <strong>{item.role === 'user' ? 'Tú' : 'Plaris'}</strong>
-            <p>{item.content}</p>
+          <article className={`analysis-message ${item.role}`} key={index}>
+            <strong>{item.role === 'user' ? 'Tú' : 'Φ Plaris'}</strong>
+            <p>{item.content || (loading ? 'Revisando tus datos…' : '')}</p>
           </article>
         ))}
-        {loading && <p role="status">Plaris está revisando tus datos…</p>}
+        {loading && (
+          <p role="status" className="analysis-chat-status">
+            Plaris está analizando tu contexto…
+          </p>
+        )}
       </div>
-      <form onSubmit={submit}>
-        <label className="field">
-          <span>Tu pregunta</span>
-          <textarea
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            required
-            disabled={disabled || loading}
-          />
-        </label>
-        <div className="form-buttons">
-          <button className="button button-primary" disabled={disabled || loading}>
-            {loading ? 'Analizando…' : 'Preguntar a Plaris'}
-          </button>
-        </div>
-      </form>
-      {disabled && <p>Selecciona al menos una sección para comenzar.</p>}
       {error && (
-        <p className="form-error" role="alert">
+        <p className="form-error analysis-chat-error" role="alert">
           {error}
         </p>
       )}
-      {messages.some((item) => item.role === 'assistant') && (
+      <div className="analysis-chat-actions">
         <button
-          className="button button-secondary"
-          disabled={loading || saved}
-          onClick={() => {
-            onSave({ month: context.periodo, context, messages });
-            setSaved(true);
-          }}
+          className="analysis-text-button"
+          disabled={loading}
+          onClick={() => ask(analyzeQuestion)}
         >
-          {saved ? 'Análisis guardado' : 'Guardar este análisis'}
+          <Sparkles size={14} />
+          Revisar mis gastos
         </button>
-      )}
-    </section>
+        {messages.some((item) => item.role === 'assistant' && item.content) && (
+          <button
+            className="analysis-text-button"
+            disabled={loading || saved}
+            onClick={() => {
+              onSave({ month: context.periodo, context, messages });
+              setSaved(true);
+            }}
+          >
+            {saved ? <Check size={14} /> : <Save size={14} />}
+            {saved ? 'Guardado' : 'Guardar análisis'}
+          </button>
+        )}
+      </div>
+      <form
+        className="analysis-composer"
+        onSubmit={(event) => {
+          event.preventDefault();
+          ask(question);
+        }}
+      >
+        <textarea
+          ref={input}
+          aria-label="Tu pregunta para Plaris"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          placeholder="Pregúntale a Plaris sobre tus movimientos…"
+          rows={2}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              ask(question);
+            }
+          }}
+        />
+        {loading ? (
+          <button
+            type="button"
+            className="analysis-send"
+            aria-label="Detener respuesta"
+            onClick={stop}
+          >
+            <Square size={17} />
+          </button>
+        ) : (
+          <button
+            className="analysis-send"
+            aria-label="Enviar pregunta a Plaris"
+            disabled={!question.trim()}
+          >
+            <ArrowUp size={20} />
+          </button>
+        )}
+      </form>
+      <p className="analysis-chat-footnote">
+        Ollama local · Recomendaciones para revisar, sin modificar tus datos.
+      </p>
+    </div>
   );
 }
