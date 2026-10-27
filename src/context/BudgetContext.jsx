@@ -42,10 +42,10 @@ export function BudgetProvider({ children }) {
 
   function completeOnboarding() {
     const budget = data.draft;
-    const result = validateZeroBasedBudget(budget);
+    const result = validateZeroBasedBudget(budget, data.deudas_activas);
     if (!result.valid) throw new Error(result.errors.join(' '));
     if (result.pending > 0)
-      throw new Error('Elige cómo quieres usar el dinero que queda sin asignar.');
+      throw new Error('Asigna todo el ingreso entre gastos, ahorros, metas, fondo de emergencia y pagos de deuda.');
     const template = cloneBudget(budget);
     const month = currentMonthKey();
     setData((previous) => ({

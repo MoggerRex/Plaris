@@ -72,7 +72,7 @@ export default function Onboarding() {
   const activeIndex = index < 0 ? 0 : index;
   const step = steps[activeIndex];
   const allocatedDraft = useMemo(() => draft, [draft]);
-  const validation = validateZeroBasedBudget(allocatedDraft);
+  const validation = validateZeroBasedBudget(allocatedDraft, debts);
   const validationErrors = validation.errors;
   const stepError = getStepError(step, draft, debts);
 
@@ -143,7 +143,7 @@ export default function Onboarding() {
   return (
     <main className="page-shell onboarding-shell">
       {step.slug !== 'intro' && <div className="onboarding-intro"><span className="eyebrow"><Wallet size={15} /> Tu punto de partida</span><h1>Tu presupuesto, paso a paso</h1></div>}
-      {step.slug !== 'intro' && <BalanceBar budget={allocatedDraft} />}
+      {step.slug !== 'intro' && <BalanceBar budget={allocatedDraft} debts={debts} />}
       <div className="progress-wrap" aria-label={`Paso ${activeIndex + 1} de ${steps.length}`}>
         <div className="progress-meta">
           <span>
@@ -323,19 +323,19 @@ function IntroStep() {
   );
 }
 
-function BalanceBar({ budget }) {
-  const totals = validationTotals(budget);
+function BalanceBar({ budget, debts }) {
+  const totals = validationTotals(budget, debts);
   return (
     <aside className="onboarding-balance" aria-label="Balance mensual actual">
       <span className="balance-label">Balance mensual</span>
       <div className="balance-metric"><small>Ingresos</small><strong>{formatCurrency(totals.income)}</strong></div>
-      <div className="balance-metric"><small>Asignado</small><strong>{formatCurrency(totals.expenses + totals.savings)}</strong></div>
-      <div className="balance-metric balance-result"><small>Disponible</small><strong>{formatCurrency(totals.income - totals.expenses - totals.savings)}</strong></div>
+      <div className="balance-metric"><small>Asignado</small><strong>{formatCurrency(totals.expenses + totals.savings + totals.debtPayments)}</strong></div>
+      <div className="balance-metric balance-result"><small>Disponible</small><strong>{formatCurrency(totals.income - totals.expenses - totals.savings - totals.debtPayments)}</strong></div>
     </aside>
   );
 }
 
-function validationTotals(budget) {
+function validationTotals(budget, debts = []) {
   return {
     income: sumAmounts(budget.incomes),
     expenses: sumAmounts(budget.expenses),
@@ -343,6 +343,10 @@ function validationTotals(budget) {
       sumAmounts(budget.savings) +
       sumAmounts((budget.goals || []).map((goal) => ({ amountCents: goal.monthlyAmountCents }))) +
       Number(budget.emergencyFund?.monthlyAmountCents || 0),
+    debtPayments: debts.reduce(
+      (total, debt) => total + Math.max(0, Math.round((Number(debt.payment) || 0) * 100)),
+      0,
+    ),
   };
 }
 
@@ -391,7 +395,7 @@ function getStepError(step, draft, debts = []) {
     const invalidDebt = debts.some(
       (debt) =>
         (debt.name?.trim() || debt.balance > 0 || debt.payment > 0 || debt.rate > 0) &&
-        (!debt.name?.trim() || debt.balance <= 0 || !debt.dueDate),
+        (!debt.name?.trim() || debt.balance <= 0 || debt.payment < 0 || debt.minimum < 0 || debt.rate < 0 || !debt.dueDate || !['mensual', 'anual'].includes(debt.rateType)),
     );
     if (invalidDebt) {
       return 'Completa nombre, monto a cubrir y fecha límite de cada deuda activa.';

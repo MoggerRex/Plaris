@@ -29,7 +29,7 @@ export function useMonthBudget() {
     month,
     changeMonth,
     budget,
-    totals: totalsForBudget(budget),
+    totals: totalsForBudget(budget, state.deudas_activas),
     comparison: buildComparison(budget, state.transactions, month),
   };
 }

@@ -36,7 +36,14 @@ export function sumAmounts(items = []) {
   return items.reduce((total, item) => total + (Number(item.amountCents) || 0), 0);
 }
 
-export function totalsForBudget(budget = {}) {
+export function debtPaymentsCents(debts = []) {
+  return debts.reduce(
+    (total, debt) => total + Math.max(0, Math.round((Number(debt.payment) || 0) * 100)),
+    0,
+  );
+}
+
+export function totalsForBudget(budget = {}, debts = []) {
   const goals = sumAmounts(
     (budget.goals || []).map((goal) => ({ amountCents: goal.monthlyAmountCents })),
   );
@@ -47,12 +54,13 @@ export function totalsForBudget(budget = {}) {
     savings: sumAmounts(budget.savings) + goals + emergency,
     goalSavings: goals,
     emergencySavings: emergency,
+    debtPayments: debtPaymentsCents(debts),
   };
 }
 
-export function unassignedAmount(budget = {}) {
-  const totals = totalsForBudget(budget);
-  return totals.income - totals.expenses - totals.savings;
+export function unassignedAmount(budget = {}, debts = []) {
+  const totals = totalsForBudget(budget, debts);
+  return totals.income - totals.expenses - totals.savings - totals.debtPayments;
 }
 
 export function applySurplusAllocation(budget, allocation) {
@@ -72,9 +80,9 @@ export function applySurplusAllocation(budget, allocation) {
   };
 }
 
-export function validateZeroBasedBudget(budget) {
-  const totals = totalsForBudget(budget);
-  const pending = unassignedAmount(budget);
+export function validateZeroBasedBudget(budget, debts = []) {
+  const totals = totalsForBudget(budget, debts);
+  const pending = unassignedAmount(budget, debts);
   const errors = [];
   const sections = [
     ['ingresos', budget.incomes || []],
@@ -95,7 +103,7 @@ export function validateZeroBasedBudget(budget) {
     errors.push('Completa el costo y la fecha objetivo de cada meta.');
   }
   if (pending < 0)
-    errors.push('Los gastos y ahorros superan los ingresos. Reduce la distribución.');
+    errors.push('Los gastos, ahorros y pagos de deuda superan los ingresos. Reduce la distribución.');
   if (pending > 0)
     errors.push('Todavía hay dinero sin asignar. Distribuye todo el ingreso planeado.');
   if (pending === 0 && totals.income === 0)

@@ -34,14 +34,26 @@ export function toPlannerData(budget, profile, debts, month, context = '') {
         category: row.category || row.name,
       }));
 
+  const hasOnboardingPlan =
+    (budget.goals || []).length > 0 ||
+    Number(budget.emergencyFund?.currentAmountCents || 0) > 0 ||
+    Number(budget.emergencyFund?.monthlyAmountCents || 0) > 0;
+  const emergencyCurrent = Number(budget.emergencyFund?.currentAmountCents || 0) / 100;
+  const legacySavings = Number(profile.savings || 0);
+  const legacyReserve = Number(profile.reserve || 0);
+
   return {
     startDate: `${month}-01`,
     incomes: mapRows(budget.incomes),
     expenses: mapRows(budget.expenses),
     debts: (debts || []).map((debt) => ({ ...debt, dueDate: debt.dueDate || null })),
-    savings: Number(profile.savings || 0),
-    reserve: Number(profile.reserve || 0),
-    plannedSavings: sumAmounts(budget.savings) / 100,
+    savings: hasOnboardingPlan ? emergencyCurrent : legacySavings,
+    reserve: hasOnboardingPlan ? emergencyCurrent : legacyReserve,
+    plannedSavings: sumAmounts(plannedSavingsRows(budget)) / 100,
+    goalContributions: (budget.goals || []).reduce(
+      (total, goal) => total + Number(goal.monthlyAmountCents || 0) / 100,
+      0,
+    ),
     goals: (budget.goals || []).map((goal, priority) => ({
       id: goal.id,
       name: goal.name,

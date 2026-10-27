@@ -6,6 +6,7 @@ import ComparisonChart from './ComparisonChart';
 import CategoryChart from './CategoryChart';
 import FinanceTable from './FinanceTable';
 import { financeSections } from '../../config/financeSections';
+import { plannedSavingsRows } from '../../services/budgetConnections';
 
 function SortableChart({ id, index, count, onMove, children }) {
   const controls = useDragControls();
@@ -79,7 +80,12 @@ export default function VisualizationPanel({
     <Reorder.Group axis="xy" as="div" values={items} onReorder={reorder} className="visual-grid">
       {items.map((id, index) => {
         const section = financeSections.find((item) => item.key === id);
-        const rows = id === 'debts' ? debts : budget[id] || [];
+        const rows =
+          id === 'debts'
+            ? debts
+            : id === 'savings'
+              ? plannedSavingsRows(budget)
+              : budget[id] || [];
         return (
           <SortableChart key={id} id={id} index={index} count={items.length} onMove={move}>
             {id === 'comparison' ? (

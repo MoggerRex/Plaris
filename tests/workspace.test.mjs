@@ -30,8 +30,9 @@ test('planner adapter retains protected expenses and subtracts debt payments onc
   const data = toPlannerData(budget, profile, debts, '2026-10');
   const result = analyze(data);
   assert.deepEqual(result.errors, []);
-  assert.equal(result.free, 17000);
+  assert.equal(result.free, 15000);
   assert.equal(result.payments, 1000);
+  assert.equal(result.plannedSavings, 2000);
   assert.equal(data.expenses[0].essential, true);
   assert.equal(data.goal.name, 'Laptop');
 });

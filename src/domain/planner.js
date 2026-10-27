@@ -80,7 +80,8 @@ export function analyze(data) {
   const income = round(data.incomes.reduce((sum, item) => sum + monthly(item), 0));
   const expenses = round(data.expenses.reduce((sum, item) => sum + monthly(item), 0));
   const payments = round(data.debts.reduce((sum, debt) => sum + debt.payment, 0));
-  const free = round(income - expenses - payments);
+  const plannedSavings = round(Number(data.plannedSavings) || 0);
+  const free = round(income - expenses - payments - plannedSavings);
   const available = round(data.savings - data.reserve);
   const start = new Date(`${data.startDate}T00:00:00Z`);
   const end = new Date(start);
@@ -122,6 +123,7 @@ export function analyze(data) {
     income,
     expenses,
     payments,
+    plannedSavings,
     free,
     available,
     oneOff,
