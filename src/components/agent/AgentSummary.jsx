@@ -2,7 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { financeSections, profileLink } from '../../config/financeSections';
 import { formatCurrency, sumAmounts } from '../../services/budgetService';
-import MonthPicker from '../common/MonthPicker';
+import MonthPicker from '../common/BudgetMonthPicker';
 
 export default function AgentSummary({ month, changeMonth, budget, debts, totals }) {
   const payment = debts.reduce((sum, debt) => sum + debt.payment * 100, 0);
@@ -34,7 +34,7 @@ export default function AgentSummary({ month, changeMonth, budget, debts, totals
           </strong>
         </div>
         <div className="month-picker-wrap">
-          <MonthPicker month={month} onChange={changeMonth} />
+          <MonthPicker month={month} onChange={changeMonth} buttonStyle />
         </div>
       </div>
     </section>

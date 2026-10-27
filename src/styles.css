@@ -5,3 +5,9 @@
 @import './styles/finance.css';
 
 @import './styles/guide.css';
+
+@import './styles/budget.css';
+@import './styles/templates.css';
+@import './styles/analytics.css';
+
+@import './styles/statement-analysis.css';
