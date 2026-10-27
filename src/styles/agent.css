@@ -400,6 +400,37 @@
   color: #9c3f34;
 }
 
+.advisor-available {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin: 14px 0 8px;
+  padding: 12px 14px;
+  background: white;
+  border: 1px solid #d2e2db;
+  border-left: 4px solid #105f56;
+  border-radius: 6px;
+}
+
+.advisor-available span {
+  color: #568b81;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.advisor-available strong {
+  color: #173d33;
+  font-size: 1.2rem;
+}
+
+.advisor-available strong.is-negative {
+  color: #9c3f34;
+}
+
 .advisor-source {
   color: #627e72;
   font-size: 0.78rem;
@@ -981,4 +1012,45 @@
   .agent-goal-grid {
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   }
+}
+
+/* ============================================================
+   SECCIÓN DE DECISIÓN EN ANÁLISIS DE COMPRA
+   ============================================================ */
+.advisor-decision {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #d2e2db;
+}
+
+.advisor-decision h4 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: #105f56;
+}
+
+.advisor-decision-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.advisor-decision-feedback {
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.advisor-decision-feedback.success {
+  background: #edf7ef;
+  color: #174225;
+  border: 1px solid #9ecfad;
+}
+
+.advisor-decision-feedback.neutral {
+  background: #f4f5f5;
+  color: #40594f;
+  border: 1px solid #d2e2db;
 }

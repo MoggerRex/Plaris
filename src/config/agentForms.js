@@ -17,7 +17,7 @@ export const agentShortcuts = [
     icon: null,
     titleLine1: '¿QUÉ QUIERES',
     titleLine2: 'COMPRAR?',
-    hint: 'Pregunta rápida: Plaris revisa la compra con tus ingresos, gastos y ahorros reales.',
+    hint: 'Pregunta rápida: Plaris revisa la compra con tus movimientos reales y tu plan de ingresos, gastos y ahorros, protegiendo el fondo.',
   },
   {
     id: 'metas',

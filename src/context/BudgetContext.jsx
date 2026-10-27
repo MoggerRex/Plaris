@@ -1,4 +1,5 @@
 import { applySavingsPlan } from '../services/budgetConnections';
+import { normalizeAnalysisRecord } from '../services/analysisHistory';
 import { saveTemplate, applyTemplate, deleteTemplate } from '../services/templateService';
 import { useCallback, useEffect, useState } from 'react';
 import { BudgetContext } from './useBudget';
@@ -115,15 +116,15 @@ export function BudgetProvider({ children }) {
     setData((previous) => deleteTemplate(previous, id));
   }
 
-  function saveAnalysis(record) {
+  const saveAnalysis = useCallback((record) => {
     setData((previous) => ({
       ...previous,
-      analysisHistory: [
-        { ...record, id: createId(), createdAt: new Date().toISOString() },
-        ...(previous.analysisHistory || []),
-      ].slice(0, 50),
+      analysisHistory: [normalizeAnalysisRecord(record), ...(previous.analysisHistory || [])].slice(
+        0,
+        50,
+      ),
     }));
-  }
+  }, []);
 
   function saveAsTemplate(month) {
     const budget = data.monthlyBudgets[month];

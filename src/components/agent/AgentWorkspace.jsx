@@ -66,6 +66,7 @@ export default function AgentWorkspace({
         month,
         transactions: state.transactions,
         debts,
+        budget,
         purchase: payload,
       });
       setLastRequest({ kind, payload, analysis });
