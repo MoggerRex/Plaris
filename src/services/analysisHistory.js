@@ -38,3 +38,31 @@ export function normalizeAnalysisRecord(record = {}) {
     messages: messagesForAnalysis(record),
   };
 }
+
+/**
+ * Recupera la compra de un análisis guardado.
+ * Los registros nuevos incluyen snapshot; los antiguos solo tienen la pregunta.
+ */
+export function purchaseFromAnalysisRecord(record = {}) {
+  if (record.type && record.type !== 'purchase_advice') return null;
+  if (record.snapshot?.purchase?.name) {
+    return {
+      name: record.snapshot.purchase.name,
+      priceCents: Number(record.snapshot.purchase.priceCents) || 0,
+      note: record.snapshot.purchase.note || '',
+    };
+  }
+
+  const question = messagesForAnalysis(record).find((item) => item.role === 'user')?.content || '';
+  const match = question.match(/Quiero comprar (.+?) por \$?\s*([\d.,]+)/i);
+  if (!match) return null;
+
+  const amount = Number.parseFloat(match[2].replace(/,/g, ''));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  return {
+    name: match[1].trim(),
+    priceCents: Math.round(amount * 100),
+    note: '',
+  };
+}

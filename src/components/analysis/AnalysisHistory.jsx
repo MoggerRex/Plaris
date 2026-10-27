@@ -13,7 +13,7 @@ const formatDate = (value) => {
  * - Botón principal: abre/cierra toda la lista.
  * - Cada análisis: abre/cierra su conversación.
  */
-export default function AnalysisHistory({ records = [] }) {
+export default function AnalysisHistory({ records = [], onSelect }) {
   const items = Array.isArray(records) ? records : [];
 
   return (
@@ -32,7 +32,10 @@ export default function AnalysisHistory({ records = [] }) {
               key={record.id || `${record.createdAt || 'record'}-${recordIndex}`}
               className="sidebar-history-item"
             >
-              <summary>
+              <summary
+                onClick={() => onSelect?.(record)}
+                title="Abrir este análisis en el panel principal"
+              >
                 {record.month || 'Sin mes'} · {formatDate(record.createdAt)}
               </summary>
               {messages.map((item, index) => (

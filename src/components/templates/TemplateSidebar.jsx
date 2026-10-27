@@ -1,11 +1,21 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMonthBudget } from '../../hooks/useMonthBudget';
 import { SquarePen, TextSearch, PanelLeftClose } from 'lucide-react';
 import AnalysisHistory from '../analysis/AnalysisHistory';
 
 export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
   const { savedTemplates, profile, month, analysisHistory } = useMonthBudget();
+  const navigate = useNavigate();
+
+  function openSavedAnalysis(record) {
+    if (!record?.id) return;
+    const params = new URLSearchParams();
+    params.set('mes', record.month || month);
+    params.set('analisis', record.id);
+    navigate(`/dashboard?${params.toString()}`);
+    onNavigate?.();
+  }
 
   const animationConfig = {
     duration: 0.3,
@@ -58,7 +68,7 @@ export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
         <span className="eyebrow" id="sidebar-analisis">
           Análisis guardados
         </span>
-        <AnalysisHistory records={analysisHistory} />
+        <AnalysisHistory records={analysisHistory} onSelect={openSavedAnalysis} />
       </section>
 
       {/* SECCIÓN 2: Plantillas guardadas */}

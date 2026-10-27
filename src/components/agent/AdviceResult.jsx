@@ -18,7 +18,7 @@ function monthLabel(month) {
   });
 }
 
-function PurchaseAdvice({ result }) {
+function PurchaseAdvice({ result, autoSave = true, fromHistory = false }) {
   const { saveAnalysis, addTransaction } = useMonthBudget();
   const [decision, setDecision] = useState(null);
 
@@ -29,11 +29,12 @@ function PurchaseAdvice({ result }) {
 
   // Efecto para guardar automáticamente este análisis en el historial de Plaris
   useEffect(() => {
-    if (!snapshot || hasSavedToHistory.current) return;
+    if (!autoSave || !snapshot || hasSavedToHistory.current) return;
 
     const { purchase } = snapshot;
     const question = `Quiero comprar ${purchase.name || 'un producto'} por ${formatCurrency(purchase.priceCents)}.${purchase.note ? ' ' + purchase.note : ''}`;
     const answer = [result.titulo, result.explicacion].filter(Boolean).join('\n\n');
+    const { snapshot: savedSnapshot, ...savedResult } = result;
 
     saveAnalysis({
       month: snapshot.month,
@@ -42,9 +43,11 @@ function PurchaseAdvice({ result }) {
         { role: 'user', content: question },
         { role: 'assistant', content: answer },
       ],
+      result: savedResult,
+      snapshot: savedSnapshot,
     });
     hasSavedToHistory.current = true;
-  }, [snapshot, result, saveAnalysis]);
+  }, [autoSave, snapshot, result, saveAnalysis]);
 
   if (!snapshot) return null;
   const { purchase, calculo } = snapshot;
@@ -202,41 +205,44 @@ function PurchaseAdvice({ result }) {
       )}
 
       {/* BOTONES INTERACTIVOS DE DECISIÓN */}
-      <div className="advisor-decision">
-        {!decision ? (
-          <>
-            <h4>¿Qué decides?</h4>
-            <div className="advisor-decision-actions">
-              <button type="button" className="button button-primary" onClick={handleBuy}>
-                Sí lo compré
-              </button>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => setDecision('rejected')}
-              >
-                No lo compré
-              </button>
-            </div>
-          </>
-        ) : decision === 'bought' ? (
-          <p className="advisor-decision-feedback success">
-            ✅ ¡Movimiento registrado! Se ha guardado como gasto real en tus Movimientos de este
-            mes.
-          </p>
-        ) : (
-          <p className="advisor-decision-feedback neutral">
-            🚫 Compra descartada. ¡Bien hecho cuidando tu plan financiero!
-          </p>
-        )}
-      </div>
+      {!fromHistory && (
+        <div className="advisor-decision">
+          {!decision ? (
+            <>
+              <h4>¿Qué decides?</h4>
+              <div className="advisor-decision-actions">
+                <button type="button" className="button button-primary" onClick={handleBuy}>
+                  Sí lo compré
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setDecision('rejected')}
+                >
+                  No lo compré
+                </button>
+              </div>
+            </>
+          ) : decision === 'bought' ? (
+            <p className="advisor-decision-feedback success">
+              ✅ ¡Movimiento registrado! Se ha guardado como gasto real en tus Movimientos de este
+              mes.
+            </p>
+          ) : (
+            <p className="advisor-decision-feedback neutral">
+              🚫 Compra descartada. ¡Bien hecho cuidando tu plan financiero!
+            </p>
+          )}
+        </div>
+      )}
     </article>
   );
 }
 
-export default function AdviceResult({ result }) {
+export default function AdviceResult({ result, autoSave = true, fromHistory = false }) {
   if (!result) return null;
-  if (result.kind === 'purchase') return <PurchaseAdvice result={result} />;
+  if (result.kind === 'purchase')
+    return <PurchaseAdvice result={result} autoSave={autoSave} fromHistory={fromHistory} />;
   return (
     <article className="advisor-answer" role="status">
       <span className="eyebrow">Tu plan financiero</span>

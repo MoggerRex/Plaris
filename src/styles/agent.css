@@ -436,6 +436,51 @@
   font-size: 0.78rem;
 }
 
+.saved-analysis-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 28px;
+  padding: 12px 16px;
+  background: #e8f1ed;
+  border: 1px solid #c7dcd0;
+  border-radius: 8px;
+  color: #173d33;
+  font-size: 0.9rem;
+}
+
+.saved-analysis-banner span {
+  color: #568b81;
+}
+
+.saved-analysis-banner + .advisor-answer {
+  margin-top: 12px;
+}
+
+.saved-analysis-message {
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #d2e2db;
+  border-radius: 6px;
+}
+
+.saved-analysis-message strong {
+  display: block;
+  color: #568b81;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.saved-analysis-message p {
+  margin: 4px 0 0;
+  color: #173d33;
+  white-space: pre-wrap;
+}
+
 .advisor-warning {
   padding: 12px 14px;
   color: #6d4a12;
