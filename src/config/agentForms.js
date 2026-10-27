@@ -17,7 +17,7 @@ export const agentShortcuts = [
     icon: null,
     titleLine1: '¿QUÉ QUIERES',
     titleLine2: 'COMPRAR?',
-    hint: 'Pregunta rápida: ¿No sabes si comprarlo? Plaris lo revisa con tus datos.',
+    hint: 'Pregunta rápida: Plaris revisa la compra con tus movimientos reales y tu plan de ingresos, gastos y ahorros, protegiendo el fondo.',
   },
   {
     id: 'metas',
@@ -47,8 +47,18 @@ export const agentShortcuts = [
 
 export const reportTypes = [
   { id: 'comparison', label: 'Reporte de comparación', hint: 'Planeado vs. real', icon: BarChart3 },
-  { id: 'distribution', label: 'Reporte de distribución', hint: 'En qué se reparte tu dinero', icon: PieChart },
-  { id: 'tracking', label: 'Reporte de tracking', hint: 'Cómo avanzas con el tiempo', icon: LineChart },
+  {
+    id: 'distribution',
+    label: 'Reporte de distribución',
+    hint: 'En qué se reparte tu dinero',
+    icon: PieChart,
+  },
+  {
+    id: 'tracking',
+    label: 'Reporte de tracking',
+    hint: 'Cómo avanzas con el tiempo',
+    icon: LineChart,
+  },
 ];
 
 /** Tipos de registro de "Agendar", con sus categorías. */

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Reorder } from 'framer-motion';
 import { useMonthBudget } from '../hooks/useMonthBudget';
@@ -7,7 +7,20 @@ import AgentWorkspace from '../components/agent/AgentWorkspace';
 import ComparisonChart from '../components/finance/ComparisonChart';
 
 export default function Dashboard() {
-  const { month, budget, comparison, profile, deudas_activas, storageError } = useMonthBudget();
+  const { month, budget, comparison, profile, deudas_activas, storageError, analysisHistory } =
+    useMonthBudget();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedAnalysisId = searchParams.get('analisis');
+  const savedAnalysis = selectedAnalysisId
+    ? (analysisHistory || []).find((record) => record.id === selectedAnalysisId) || null
+    : null;
+
+  function closeSavedAnalysis() {
+    if (!searchParams.has('analisis')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('analisis');
+    setSearchParams(next, { replace: true });
+  }
 
   // Panel "Cada peso cuenta": abierto por defecto
   const [chartsOpen, setChartsOpen] = useState(true);
@@ -93,6 +106,8 @@ export default function Dashboard() {
           budget={budget}
           profile={profile}
           debts={deudas_activas}
+          savedAnalysis={savedAnalysis}
+          onCloseSavedAnalysis={closeSavedAnalysis}
         />
       </div>
     </main>

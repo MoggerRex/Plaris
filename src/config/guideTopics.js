@@ -383,7 +383,7 @@ export const guideTopics = [
         items: [
           'Completa Mi perfil → Perfil y meta: nombre de tu meta, costo, plazo en días, ahorro actual y reserva protegida.',
           'Captura tus ingresos, gastos, ahorros y deudas del mes en las demás pestañas del perfil. Mientras más completos estén, mejor será el contexto.',
-          'Confirma el mes en la barra superior. El Agente trabaja con el presupuesto de ese mes y con tus datos actuales de perfil y deudas.',
+          'Confirma el mes en la barra superior. El atajo Agente revisa compras con tus movimientos reales y tu presupuesto planeado de ese mes; metas y reportes usan el presupuesto y tus datos de perfil y deudas.',
           'Si vas a usar las respuestas de IA, abre Ollama en tu computadora. Sin él, las consultas que dependen del modelo no pueden responder.',
         ],
       },
@@ -393,6 +393,7 @@ export const guideTopics = [
           'Escribe qué quieres comprar. Por ejemplo: “Audífonos inalámbricos”.',
           'Indica el precio en pesos mexicanos. Es el dato principal para revisar el impacto en tu economía.',
           'Agrega contexto opcional: si está en oferta, si este mes tienes gastos extra, si tienes deuda o si dudas entre comprarlo o esperar.',
+          'La revisión combina tus movimientos reales de Movimientos con el presupuesto planeado del mes. Descuenta los gastos y ahorros planeados pendientes para no tratar como libre el dinero que ya está comprometido, y protege el ahorro de la categoría fondo: si la compra solo cabe usándolo, Plaris te lo advierte.',
           'Presiona el botón de enviar o usa Enter. Shift + Enter agrega un salto de línea si necesitas escribir más.',
         ],
         callout: {
