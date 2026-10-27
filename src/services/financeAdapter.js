@@ -1,4 +1,5 @@
 import { financeSections } from '../config/financeSections.js';
+import { plannedSavingsRows, primaryBudgetGoal } from './budgetConnections.js';
 import { sumAmounts } from './budgetService.js';
 
 export function buildComparison(budget, transactions, month) {
@@ -7,7 +8,9 @@ export function buildComparison(budget, transactions, month) {
     .map((section) => ({
       key: section.key,
       name: section.label,
-      Planeado: sumAmounts(budget[section.key]) / 100,
+      Planeado:
+        sumAmounts(section.key === 'savings' ? plannedSavingsRows(budget) : budget[section.key]) /
+        100,
       Real:
         sumAmounts(
           transactions.filter(
@@ -51,11 +54,7 @@ export function toPlannerData(budget, profile, debts, month, context = '') {
       currentAmount: Number(budget.emergencyFund?.currentAmountCents || 0) / 100,
       monthlyAmount: Number(budget.emergencyFund?.monthlyAmountCents || 0) / 100,
     },
-    goal: {
-      name: profile.goalName || '',
-      cost: Number(profile.cost || 0),
-      days: Number(profile.days || 90),
-    },
+    goal: primaryBudgetGoal(budget, profile, month),
     context,
   };
 }
@@ -67,11 +66,13 @@ export function selectedFinanceContext(budget, debts, comparison, sections, mont
       context.secciones.deudas = debts;
     } else {
       context.secciones[key] = {
-        conceptos: (budget[key] || []).map((row) => ({
-          concepto: row.name,
-          categoria: row.category,
-          montoMensual: row.amountCents / 100,
-        })),
+        conceptos: (key === 'savings' ? plannedSavingsRows(budget) : budget[key] || []).map(
+          (row) => ({
+            concepto: row.name,
+            categoria: row.category,
+            montoMensual: row.amountCents / 100,
+          }),
+        ),
         totales: comparison.find((item) => item.key === key),
       };
     }

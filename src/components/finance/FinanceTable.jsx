@@ -5,27 +5,31 @@ export default function FinanceTable({ rows, title, debts = false }) {
     <section className="panel">
       <h2>{title}</h2>
       <div className="table-scroll" tabIndex={0} role="region" aria-label={`Tabla de ${title}`}>
-        <table>
+        <table className="finance-detail-table">
           <thead>
             <tr>
               <th>Concepto</th>
-              <th>{debts ? 'Saldo' : 'Categoría'}</th>
-              <th>{debts ? 'Pago mensual' : 'Monto mensual'}</th>
+              <th className={debts ? 'money-cell' : undefined}>{debts ? 'Saldo' : 'Categoría'}</th>
+              <th className="money-cell">{debts ? 'Pago mensual' : 'Monto mensual'}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>
-                <td>{row.name || 'Sin nombre'}</td>
-                <td>{debts ? formatCurrency(row.balance * 100) : row.category || row.name}</td>
-                <td>{formatCurrency(debts ? row.payment * 100 : row.amountCents)}</td>
+                <td className="money-cell">{row.name || 'Sin nombre'}</td>
+                <td className={debts ? 'money-cell' : undefined}>
+                  {debts ? formatCurrency(row.balance * 100) : row.category || row.name}
+                </td>
+                <td className="money-cell">
+                  {formatCurrency(debts ? row.payment * 100 : row.amountCents)}
+                </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
               <th colSpan={2}>Total mensual</th>
-              <td>
+              <td className="money-cell">
                 {formatCurrency(
                   debts ? rows.reduce((sum, row) => sum + row.payment * 100, 0) : sumAmounts(rows),
                 )}

@@ -21,7 +21,9 @@ export default function AgentSummary({ month, changeMonth, budget, debts, totals
               {formatCurrency(
                 section.key === 'debts'
                   ? debts.reduce((sum, debt) => sum + debt.balance * 100, 0)
-                  : sumAmounts(budget[section.key]),
+                  : section.key === 'savings'
+                    ? totals.savings
+                    : sumAmounts(budget[section.key]),
               )}
             </strong>
             <ArrowUpRight size={15} />

@@ -128,3 +128,108 @@ tfoot {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.chart-panel,
+.analytics-chart,
+.analytics-metric {
+  animation: chart-appear 650ms ease-out both;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.chart-panel:hover,
+.analytics-chart:hover {
+  border-color: #a8c5b2;
+  box-shadow: 0 4px 16px #123e340a;
+}
+
+@keyframes chart-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-panel,
+  .analytics-chart,
+  .analytics-metric {
+    animation: none;
+    transition: none;
+  }
+}
+
+.viewport-chart {
+  opacity: 0;
+  transition: opacity 650ms ease-out;
+}
+.viewport-chart-visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewport-chart {
+    opacity: 1;
+    transition: none;
+  }
+}
+
+.visual-grid > .comparison-table-panel {
+  grid-column: 1 / -1;
+}
+.comparison-table {
+  min-width: 720px;
+}
+.comparison-table :is(th, td) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  vertical-align: middle;
+}
+.comparison-table :is(th, td):nth-child(2),
+.comparison-table :is(th, td):nth-child(3),
+.finance-detail-table .money-cell {
+  text-align: right;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-variant-numeric: tabular-nums;
+}
+.comparison-table :is(th, td):last-child {
+  width: 42%;
+  padding-left: 28px;
+}
+.finance-detail-table :is(th, td) {
+  overflow-wrap: normal;
+  word-break: normal;
+  vertical-align: middle;
+}
+
+.visual-grid-item {
+  min-width: 0;
+  position: relative;
+}
+.visual-grid-item > .panel {
+  margin: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding-top: 2.8rem;
+}
+.visual-grid-comparison {
+  grid-column: 1 / -1;
+}
+.chart-reorder-controls {
+  display: flex;
+  position: absolute;
+  right: 0.65rem;
+  top: 0.5rem;
+  gap: 0.2rem;
+  z-index: 2;
+}
+.agent-workspace-combined {
+  min-width: 0;
+  overflow-y: auto;
+}
+.agent-workspace-combined > .button {
+  margin: 1rem;
+}

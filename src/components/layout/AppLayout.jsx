@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { Suspense, useLayoutEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../Navbar';
+import SymbolIntro from '../../animations/SymbolIntro';
 import TemplateSidebar from '../templates/TemplateSidebar';
 import { useBudget } from '../../context/useBudget';
 import { useMonthBudget } from '../../hooks/useMonthBudget';
@@ -19,7 +20,19 @@ function MonthlySummary() {
   );
 }
 
+function ReadyContent({ readyRef, children }) {
+  useLayoutEffect(() => {
+    readyRef.current = true;
+    return () => {
+      readyRef.current = false;
+    };
+  }, [readyRef]);
+  return children;
+}
+
 export default function AppLayout() {
+  const rootRef = useRef(null);
+  const readyRef = useRef(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { storageError, onboardingComplete } = useBudget();
 
@@ -27,7 +40,8 @@ export default function AppLayout() {
   const toggleSidebar = () => setSidebarOpen((open) => !open);
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" ref={rootRef}>
+      <SymbolIntro rootRef={rootRef} readyRef={readyRef} />
       <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
       <div className={'app-body' + (sidebarOpen && onboardingComplete ? ' sidebar-open' : '')}>
         {onboardingComplete && (
@@ -44,7 +58,11 @@ export default function AppLayout() {
               {storageError}
             </p>
           )}
-          <Outlet />
+          <Suspense fallback={<p role="status">Cargando contenido...</p>}>
+            <ReadyContent readyRef={readyRef}>
+              <Outlet />
+            </ReadyContent>
+          </Suspense>
         </div>
       </div>
     </div>

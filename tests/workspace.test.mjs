@@ -54,8 +54,10 @@ test('templates create isolated copies and apply without altering other months o
   assert.equal(next.monthlyBudgets['2026-11'].incomes[0].amountCents, 4000000);
   assert.equal(next.monthlyBudgets['2026-10'], budget);
   assert.equal(next.transactions, transactions);
-  next.deudas_activas[0].balance = 5;
-  assert.equal(template.debts[0].balance, 10000);
+  assert.equal(next.deudas_activas, state.deudas_activas);
+  assert.equal(next.profile, state.profile);
+  assert.equal(template.debts, undefined);
+  assert.equal(template.profile, undefined);
 });
 
 test('saved profile, templates and conversations survive reload; malformed legacy goal does not reset budget', () => {

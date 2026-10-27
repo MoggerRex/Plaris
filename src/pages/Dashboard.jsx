@@ -7,13 +7,11 @@ import AgentWorkspace from '../components/agent/AgentWorkspace';
 import ComparisonChart from '../components/finance/ComparisonChart';
 
 export default function Dashboard() {
-  const { month, budget, comparison, profile, deudas_activas, storageError } =
-    useMonthBudget();
-  const signature = JSON.stringify({ month, budget, profile, deudas_activas });
+  const { month, budget, comparison, profile, deudas_activas, storageError } = useMonthBudget();
 
   // Panel "Cada peso cuenta": abierto por defecto
   const [chartsOpen, setChartsOpen] = useState(true);
-  
+
   // Estado para el orden de las gráficas en el dashboard
   const [cardOrder, setCardOrder] = useState(['planeas', 'llevas']);
 
@@ -39,7 +37,10 @@ export default function Dashboard() {
           <aside className="agent-charts">
             <span className="eyebrow">El panorama de tu mes</span>
             <h2>Cada peso cuenta.</h2>
-            <p>Tu presupuesto y tus movimientos, en perspectiva. (Arrastra hacia arriba o abajo para ordenar)</p>
+            <p>
+              Tu presupuesto y tus movimientos, en perspectiva. (Arrastra hacia arriba o abajo para
+              ordenar)
+            </p>
 
             {/* Grupo de elementos reordenables con animación */}
             <Reorder.Group
@@ -68,7 +69,11 @@ export default function Dashboard() {
                   }}
                 >
                   {id === 'planeas' ? (
-                    <ComparisonChart data={comparison} title="Lo que planeas" series={['Planeado']} />
+                    <ComparisonChart
+                      data={comparison}
+                      title="Lo que planeas"
+                      series={['Planeado']}
+                    />
                   ) : (
                     <ComparisonChart data={comparison} title="Lo que llevas" series={['Real']} />
                   )}
@@ -83,7 +88,7 @@ export default function Dashboard() {
         </div>
 
         <AgentWorkspace
-          key={signature}
+          key={month}
           month={month}
           budget={budget}
           profile={profile}

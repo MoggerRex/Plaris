@@ -4,13 +4,16 @@
 }
 
 .app-header {
+  --header-background: #123e34;
+  --header-active: #e1ead5;
   display: grid;
   grid-template-columns: 80px auto 1fr;
   align-items: stretch;
   width: 100%;
   min-height: 78px;
-  background: #2eb6aa;
-  border-bottom: 2px solid #12675e;
+  background: var(--header-background);
+  border-bottom: 2px solid #b9c8a4;
+  color: #f5f7ee;
   /* Eliminada la transición CSS para evitar conflictos con Framer Motion */
 }
 
@@ -20,7 +23,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  border-right: 1px solid #19776c;
+  border-right: 1px solid #3b6053;
   box-sizing: border-box;
   min-width: 0;
   height: 100%;
@@ -78,7 +81,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 18px;
-  border-right: 1px solid #19776c;
+  border-right: 1px solid #3b6053;
 }
 
 .header-nav-section a {
@@ -92,8 +95,8 @@
 }
 
 .header-nav-section a.active {
-  background: #105f56;
-  color: #d8f3eb;
+  background: var(--header-active);
+  color: var(--header-background);
 }
 
 .app-header svg {
