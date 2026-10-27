@@ -39,7 +39,13 @@ No cambien las unidades dentro de componentes. financeAdapter.js convierte centa
 
 Los formularios tienen un borrador local; Guardar confirma el cambio al estado compartido. Los botones del resumen enlazan a /perfil/incomes, /perfil/expenses, /perfil/savings y /perfil/debts. Los enlaces conservan ?mes=AAAA-MM. La ruta antigua /presupuesto/:section redirige al perfil.
 
-El chat usa /api/chat y recibe solo las secciones seleccionadas, con los últimos 12 mensajes. Al cambiar el contexto se inicia una conversación nueva. El agente usa /api/generate con validación de propuestas. Ambos cancelan la petición al salir de la pantalla y tienen un límite de espera. Un fallo de Ollama no bloquea editar o visualizar datos.
+El chat usa /api/chat con respuesta progresiva y recibe el contexto completo del mes (presupuesto, movimientos, perfil, deudas, metas y fondo de emergencia), con los últimos 12 mensajes. Las pestañas, filtros y páginas solo cambian la vista, no reducen los datos enviados. Consultar filas prepara una pregunta editable sin enviarla automáticamente. Al cambiar el mes o los datos se inicia una conversación nueva. El agente usa /api/generate con validación de propuestas. Ambos cancelan la petición al salir de la pantalla y tienen un límite de espera; el chat también permite detener una respuesta. Un fallo de Ollama no bloquea editar o visualizar datos.
+
+Análisis incluye los movimientos del mes con fecha, categoría, descripción y monto convertido a MXN. analysisMovements.js calcula el desglose por categoría y descripción, sus porcentajes y un escenario hipotético de reducción a la mitad. Una categoría necesaria no implica que todas sus compras lo sean: el chat debe distinguirlas por su descripción, respetar la prioridad no negociable definida únicamente en el presupuesto planeado y pedir detalle cuando falte información. El campo Descripción se captura y edita desde Presupuesto y Movimientos; no se reclasifican ni modifican gastos desde el chat.
+
+El dashboard de Análisis no muestra KPI y organiza tres paneles intercambiables: chat, datos con pestañas y detalle de categoría. En escritorio se ajustan ancho y altura con separadores; las flechas y los separadores también aceptan teclado. La distribución se persiste en plaris-analysis-layout-v1, separada de los datos financieros. Ampliar o mover paneles conserva el chat. En móvil los paneles se apilan y las tablas mantienen desplazamiento local.
+
+La primera pestaña de datos es Planeado vs. real y reutiliza ComparisonTable en modo compacto. Conserva los estados de ingresos, gastos y ahorros; su botón prepara una pregunta para explicar las diferencias. Los cambios de pestaña usan transiciones de 200 ms como la Guía, y los paneles animan su posición al reorganizarse. Ambas animaciones respetan la preferencia de movimiento reducido.
 
 ## Desarrollo
 

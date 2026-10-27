@@ -9,3 +9,4 @@ createRoot(document.getElementById('root')).render(
 );
 
 import './styles.css';
+import './styles/analysis.css';
