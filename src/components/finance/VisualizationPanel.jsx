@@ -76,7 +76,7 @@ export default function VisualizationPanel({
   }
 
   return (
-    <Reorder.Group axis="y" as="div" values={items} onReorder={reorder} className="visual-grid">
+    <Reorder.Group axis="xy" as="div" values={items} onReorder={reorder} className="visual-grid">
       {items.map((id, index) => {
         const section = financeSections.find((item) => item.key === id);
         const rows = id === 'debts' ? debts : budget[id] || [];

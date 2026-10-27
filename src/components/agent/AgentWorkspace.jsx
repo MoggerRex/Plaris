@@ -149,14 +149,6 @@ export default function AgentWorkspace({
               {Icon ? <Icon size={16} /> : <span>Φ</span>} {label}
             </button>
           ))}
-          <button
-            type="button"
-            className="pill-button"
-            disabled={isBusy}
-            onClick={() => setMode('plan')}
-          >
-            Plan financiero
-          </button>
         </div>
       </div>
 
