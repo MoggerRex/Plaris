@@ -1,8 +1,28 @@
 import { money } from '../../domain/planner';
 
+function planStatus(item) {
+  const difference = Math.round((item.Real - item.Planeado) * 100) / 100;
+  const amount = money(Math.abs(difference));
+  if (!item.Planeado && !item.Real) return 'Sin plan ni movimientos';
+  if (!item.Planeado) return `${money(item.Real)} registrados sin plan`;
+  if (item.key === 'savings') {
+    if (difference < 0) return `Faltan ${amount} por ahorrar`;
+    if (difference > 0) return `Meta superada por ${amount}`;
+    return 'Meta de ahorro alcanzada';
+  }
+  if (item.key === 'expenses') {
+    if (difference < 0) return `${amount} disponibles del presupuesto`;
+    if (difference > 0) return `${amount} por encima del presupuesto`;
+    return 'Presupuesto utilizado por completo';
+  }
+  if (difference < 0) return `Faltan ${amount} por recibir`;
+  if (difference > 0) return `${amount} más de lo planeado`;
+  return 'Ingreso planeado recibido';
+}
+
 export default function ComparisonTable({ data }) {
   return (
-    <section className="panel">
+    <section className="panel comparison-table-panel">
       <h2>Planeado y real</h2>
       <div
         className="table-scroll"
@@ -10,13 +30,13 @@ export default function ComparisonTable({ data }) {
         aria-label="Comparación de presupuesto y movimientos"
         tabIndex={0}
       >
-        <table>
+        <table className="comparison-table">
           <thead>
             <tr>
               <th>Tipo</th>
               <th>Planeado</th>
               <th>Real</th>
-              <th>Real menos planeado</th>
+              <th>Estado del plan</th>
             </tr>
           </thead>
           <tbody>
@@ -25,14 +45,16 @@ export default function ComparisonTable({ data }) {
                 <td>{item.name}</td>
                 <td>{money(item.Planeado)}</td>
                 <td>{money(item.Real)}</td>
-                <td>{money(item.Real - item.Planeado)}</td>
+                <td>{planStatus(item)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="empty-state">
-        La diferencia describe lo registrado; un resultado positivo no siempre significa una mejora.
+        El estado compara los movimientos registrados con el plan completo del mes. En ahorros
+        muestra cuánto falta para la meta; en gastos, cuánto queda del presupuesto o cuánto se ha
+        excedido.
       </p>
     </section>
   );

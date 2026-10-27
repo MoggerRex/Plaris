@@ -4,7 +4,14 @@ import CategoryChart from './CategoryChart';
 import FinanceTable from './FinanceTable';
 import { financeSections } from '../../config/financeSections';
 
-export default function VisualizationPanel({ mode, budget, debts, comparison, sections }) {
+export default function VisualizationPanel({
+  mode,
+  budget,
+  debts,
+  comparison,
+  sections,
+  includeComparison = true,
+}) {
   const selected = financeSections.filter((item) => sections.includes(item.key));
   if (mode === 'tablas') {
     return (
@@ -23,7 +30,9 @@ export default function VisualizationPanel({ mode, budget, debts, comparison, se
   }
   return (
     <div className="visual-grid">
-      <ComparisonChart data={comparison.filter((item) => sections.includes(item.key))} />
+      {includeComparison && (
+        <ComparisonChart data={comparison.filter((item) => sections.includes(item.key))} />
+      )}
       {selected.map((item) => (
         <CategoryChart
           key={item.key}

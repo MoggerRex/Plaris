@@ -646,3 +646,10 @@
 .budget-page :is(.planned-scroll, .budget-history-scroll) {
   scrollbar-color: #b5c6a8 #f0f4ed;
 }
+
+.budget-history-view-all {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 1rem;
+}

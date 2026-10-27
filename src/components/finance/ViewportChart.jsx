@@ -10,23 +10,24 @@ export default function ViewportChart({ children, width = '100%', height = 300, 
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || entered) return;
+    if (!element) return;
     if (typeof IntersectionObserver === 'undefined') {
       const frame = requestAnimationFrame(() => setEntered(true));
       return () => cancelAnimationFrame(frame);
     }
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
           setEntered(true);
-          observer.disconnect();
+        } else if (!entry.isIntersecting) {
+          setEntered(false);
         }
       },
-      { threshold: 0.15 },
+      { threshold: [0, 0.15] },
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [entered]);
+  }, []);
 
   const visible = entered || reduced;
   return (

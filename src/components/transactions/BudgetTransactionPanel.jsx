@@ -1,4 +1,5 @@
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { centsToInput, formatCurrency } from '../../services/budgetService';
 import { transactionTypes as TRANSACTION_TYPES } from '../../config/transactionTypes';
 
@@ -192,6 +193,12 @@ export default function BudgetTransactionPanel({
               <p className="empty-state">No hay movimientos registrados para este mes.</p>
             )}
           </div>
+          <Link
+            className="button button-secondary budget-history-view-all"
+            to={'/movimientos?mes=' + month}
+          >
+            Ver todos los movimientos
+          </Link>
         </section>
       </div>
     </div>

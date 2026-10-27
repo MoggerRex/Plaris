@@ -112,7 +112,7 @@ export default function AnnualAnalytics({
   monthlyBudgets,
   openingFunds,
   debts,
-  information,
+  overview,
   children,
 }) {
   const animation = useChartAnimation();
@@ -149,7 +149,6 @@ export default function AnnualAnalytics({
   const hasData = data.hasMonthData;
   return (
     <section className="annual-analytics" aria-label="Gráficas e indicadores financieros">
-      {information}
       <header className="analytics-header">
         <div>
           <p>
@@ -219,275 +218,294 @@ export default function AnnualAnalytics({
         </p>
       </details>
 
-      <div className="analytics-grid">
-        {children}
-        <article className="analytics-chart">
-          <h3>¿En qué gastas? · {period}</h3>
-          <p>
-            Gastos reales por categoría; incluye categorías creadas después del onboarding. Las
-            deudas se muestran por separado.
-          </p>
-          {data.categoryData.length === 0 ? (
-            <p className="analytics-empty">Todavía no hay gastos reales en este periodo.</p>
-          ) : (
-            <>
-              <ViewportChart
-                initialDimension={{ width: 640, height: 300 }}
-                width="100%"
-                height={Math.max(260, data.categoryData.length * 42)}
-              >
-                <BarChart
-                  data={data.categoryData}
-                  layout="vertical"
-                  margin={{ left: 12, right: 24 }}
-                  accessibilityLayer
-                >
-                  <CartesianGrid
-                    stroke={chartColors.grid}
-                    strokeDasharray="3 3"
-                    horizontal={false}
-                  />
-                  <XAxis type="number" tickFormatter={axisMoney} />
-                  <YAxis type="category" dataKey="category" width={110} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
-                  <Bar
-                    {...animation}
-                    dataKey="amount"
-                    name="Gasto real"
-                    fill={chartColors.expense}
-                    radius={[0, 5, 5, 0]}
-                  />
-                </BarChart>
-              </ViewportChart>
-              <DataTable
-                caption="Gastos por categoría"
-                headers={['Categoría', 'Gasto', '% del gasto']}
-                rows={data.categoryData.map((row) => [
-                  row.category,
-                  formatCurrency(row.amount),
-                  percent(row.share),
-                ])}
-              />
-            </>
-          )}
-        </article>
-
-        <article className="analytics-chart">
-          <h3>Ahorro mensual · {month.slice(0, 4)}</h3>
-          <p>
-            Compara el ahorro neto (aportaciones menos retiros) con el plan mensual. El saldo
-            inicial no cuenta como ahorro nuevo.
-          </p>
-          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
-            <BarChart data={data.annual} accessibilityLayer>
-              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
-              <Legend />
-              <Bar
-                {...animation}
-                dataKey="plannedSaving"
-                name="Planeado"
-                fill={chartColors.planned}
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                {...animation}
-                dataKey="realSaving"
-                name="Ahorro neto"
-                fill={chartColors.actual}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ViewportChart>
-          <DataTable
-            caption="Ahorro mensual"
-            headers={['Mes', 'Planeado', 'Aportaciones', 'Retiros', 'Ahorro neto']}
-            rows={data.annual.map((row) => [
-              row.month,
-              formatCurrency(row.plannedSaving),
-              ...['contributions', 'withdrawals', 'realSaving'].map((key) =>
-                row[key] === null ? 'Fuera del corte' : formatCurrency(row[key]),
-              ),
-            ])}
-          />
-        </article>
-
-        <article className="analytics-chart">
-          <h3>Tu ahorro hacia diciembre · {month.slice(0, 4)}</h3>
-          <p>
-            La línea continua muestra el saldo de ahorro, incluido el saldo inicial y descontando
-            retiros. La línea discontinua completa el escenario del plan.
-          </p>
-          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
-            <LineChart data={data.annual} accessibilityLayer>
-              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
-              <Legend />
-              <Line
-                {...animation}
-                type="linear"
-                dataKey="cumulative"
-                name="Saldo de ahorro"
-                stroke={chartColors.actual}
-                strokeWidth={3}
-                connectNulls={false}
-              />
-              <Line
-                {...animation}
-                type="linear"
-                dataKey="projected"
-                name="Escenario del plan"
-                stroke={chartColors.projection}
-                strokeWidth={3}
-                strokeDasharray="6 4"
-                connectNulls={false}
-              />
-            </LineChart>
-          </ViewportChart>
-          {data.projection === null && (
-            <p>No hay base de ahorro para proyectar en el año seleccionado.</p>
-          )}
-          <DataTable
-            caption="Proyección de ahorro"
-            headers={['Mes', 'Saldo de ahorro', 'Escenario del plan']}
-            rows={data.annual.map((row) => [
-              row.month,
-              row.cumulative === null ? 'Fuera del corte' : formatCurrency(row.cumulative),
-              row.projected === null ? '—' : formatCurrency(row.projected),
-            ])}
-          />
-        </article>
-
-        <article className="analytics-chart">
-          <h3>Planeado y real · {month.slice(0, 4)}</h3>
-          <p>Ingresos por mes de presupuesto asignado; gastos y deudas por fecha real.</p>
-          <label>
-            Comparar{' '}
-            <select value={comparison} onChange={(e) => setComparison(e.target.value)}>
-              <option value="expense">Gastos</option>
-              <option value="income">Ingresos</option>
-              <option value="debt">Pagos de deuda</option>
-            </select>
-          </label>
-          <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
-            <BarChart data={data.annual} accessibilityLayer>
-              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={axisMoney} width={75} />
-              <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
-              <Legend />
-              <Bar
-                {...animation}
-                dataKey={plannedKey}
-                name={`${seriesLabel} planeados`}
-                fill={chartColors.planned}
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                {...animation}
-                dataKey={actualKey}
-                name={`${seriesLabel} reales`}
-                fill={chartColors.actual}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ViewportChart>
-          <DataTable
-            caption={seriesLabel}
-            headers={['Mes', 'Planeado', 'Real']}
-            rows={data.annual.map((row) => [
-              row.month,
-              formatCurrency(row[plannedKey]),
-              row[actualKey] === null ? 'Fuera del corte' : formatCurrency(row[actualKey]),
-            ])}
-          />
-        </article>
-
-        <article className="analytics-chart analytics-wide">
-          <h3>Dinero disponible por semana · {month}</h3>
-          <p>
-            Cada barra muestra cuánto dinero te queda al final del periodo, incluyendo lo que traes
-            de semanas anteriores y descontando lo reservado para próximos meses. Verde: saldo
-            disponible. Rojo: saldo negativo. La semana actual muestra lo registrado hasta hoy.
-          </p>
-          {weeks.length === 0 ? (
-            <p className="analytics-empty">
-              Este mes todavía no comienza. El balance aparecerá conforme avance el mes.
+      <section className="analytics-group" aria-labelledby="monthly-charts-title">
+        <div className="analytics-group-heading">
+          <h2 id="monthly-charts-title">Tu mes en perspectiva</h2>
+          <p>Compara tu plan con lo registrado y revisa en qué gastas y cuánto te queda.</p>
+        </div>
+        <div className="analytics-grid">
+          {overview}
+          <article className="analytics-chart">
+            <h3>¿En qué gastas? · {period}</h3>
+            <p>
+              Gastos reales por categoría; incluye categorías creadas después del onboarding. Las
+              deudas se muestran por separado.
             </p>
-          ) : (
-            <>
-              <div className="weekly-chart-scroll">
-                <div className="weekly-chart-canvas">
-                  <ViewportChart
-                    initialDimension={{ width: 640, height: 320 }}
-                    width="100%"
-                    height={320}
+            {data.categoryData.length === 0 ? (
+              <p className="analytics-empty">Todavía no hay gastos reales en este periodo.</p>
+            ) : (
+              <>
+                <ViewportChart
+                  initialDimension={{ width: 640, height: 300 }}
+                  width="100%"
+                  height={Math.max(260, data.categoryData.length * 42)}
+                >
+                  <BarChart
+                    data={data.categoryData}
+                    layout="vertical"
+                    margin={{ left: 12, right: 24 }}
+                    accessibilityLayer
                   >
-                    <BarChart
-                      data={weeks}
-                      margin={{ top: 35, right: 30, bottom: 15, left: 10 }}
-                      accessibilityLayer
+                    <CartesianGrid
+                      stroke={chartColors.grid}
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                    />
+                    <XAxis type="number" tickFormatter={axisMoney} />
+                    <YAxis type="category" dataKey="category" width={110} tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
+                    <Bar
+                      {...animation}
+                      dataKey="amount"
+                      name="Gasto real"
+                      fill={chartColors.expense}
+                      radius={[0, 5, 5, 0]}
+                    />
+                  </BarChart>
+                </ViewportChart>
+                <DataTable
+                  caption="Gastos por categoría"
+                  headers={['Categoría', 'Gasto', '% del gasto']}
+                  rows={data.categoryData.map((row) => [
+                    row.category,
+                    formatCurrency(row.amount),
+                    percent(row.share),
+                  ])}
+                />
+              </>
+            )}
+          </article>
+          <article className="analytics-chart analytics-wide">
+            <h3>Dinero disponible por semana · {month}</h3>
+            <p>
+              Cada barra muestra cuánto dinero te queda al final del periodo, incluyendo lo que
+              traes de semanas anteriores y descontando lo reservado para próximos meses. Verde:
+              saldo disponible. Rojo: saldo negativo. La semana actual muestra lo registrado hasta
+              hoy.
+            </p>
+            {weeks.length === 0 ? (
+              <p className="analytics-empty">
+                Este mes todavía no comienza. El balance aparecerá conforme avance el mes.
+              </p>
+            ) : (
+              <>
+                <div className="weekly-chart-scroll">
+                  <div className="weekly-chart-canvas">
+                    <ViewportChart
+                      initialDimension={{ width: 640, height: 320 }}
+                      width="100%"
+                      height={320}
                     >
-                      <CartesianGrid
-                        stroke={chartColors.grid}
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="periodLabel"
-                        interval={0}
-                        tick={{ fontSize: 12 }}
-                        height={50}
-                      />
-                      <YAxis
-                        tickFormatter={axisMoney}
-                        width={85}
-                        domain={['auto', 'auto']}
-                        padding={{ top: 20, bottom: 25 }}
-                      />
-                      <Tooltip content={<WeeklyTooltip />} />
-                      <ReferenceLine y={0} stroke="#64748b" />
-                      <Bar
-                        {...animation}
-                        dataKey="available"
-                        name="Dinero disponible"
-                        maxBarSize={75}
+                      <BarChart
+                        data={weeks}
+                        margin={{ top: 35, right: 30, bottom: 15, left: 10 }}
+                        accessibilityLayer
                       >
-                        {weeks.map((week) => (
-                          <Cell
-                            key={week.label}
-                            fill={week.available < 0 ? chartColors.negative : chartColors.actual}
-                          />
-                        ))}
-                        <LabelList
-                          dataKey="available"
-                          position="top"
-                          formatter={formatCurrency}
-                          fontSize={12}
-                          fill="#172b3a"
+                        <CartesianGrid
+                          stroke={chartColors.grid}
+                          strokeDasharray="3 3"
+                          vertical={false}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ViewportChart>
+                        <XAxis
+                          dataKey="periodLabel"
+                          interval={0}
+                          tick={{ fontSize: 12 }}
+                          height={50}
+                        />
+                        <YAxis
+                          tickFormatter={axisMoney}
+                          width={85}
+                          domain={['auto', 'auto']}
+                          padding={{ top: 20, bottom: 25 }}
+                        />
+                        <Tooltip content={<WeeklyTooltip />} />
+                        <ReferenceLine y={0} stroke="#64748b" />
+                        <Bar
+                          {...animation}
+                          dataKey="available"
+                          name="Dinero disponible"
+                          maxBarSize={75}
+                        >
+                          {weeks.map((week) => (
+                            <Cell
+                              key={week.label}
+                              fill={week.available < 0 ? chartColors.negative : chartColors.actual}
+                            />
+                          ))}
+                          <LabelList
+                            dataKey="available"
+                            position="top"
+                            formatter={formatCurrency}
+                            fontSize={12}
+                            fill="#172b3a"
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ViewportChart>
+                  </div>
                 </div>
-              </div>
-              <DataTable
-                caption="Dinero disponible por semana"
-                headers={['Periodo', 'Dinero disponible']}
-                rows={weeks.map((row) => [row.periodLabel, formatCurrency(row.available)])}
-              />
-            </>
-          )}
-          <p>
-            Calculado con tus movimientos registrados. Pasa sobre una barra para ver los ingresos,
-            gastos, ahorro y pagos de deuda del periodo.
-          </p>
-        </article>
-      </div>
+                <DataTable
+                  caption="Dinero disponible por semana"
+                  headers={['Periodo', 'Dinero disponible']}
+                  rows={weeks.map((row) => [row.periodLabel, formatCurrency(row.available)])}
+                />
+              </>
+            )}
+            <p>
+              Calculado con tus movimientos registrados. Pasa sobre una barra para ver los ingresos,
+              gastos, ahorro y pagos de deuda del periodo.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section className="analytics-group" aria-labelledby="distribution-charts-title">
+        <div className="analytics-group-heading">
+          <h2 id="distribution-charts-title">Cómo distribuyes tu presupuesto</h2>
+          <p>Desglose de tus ingresos, gastos y ahorros planeados, y del saldo de tus deudas.</p>
+        </div>
+        <div className="analytics-grid">{children}</div>
+      </section>
+      <section className="analytics-group" aria-labelledby="year-charts-title">
+        <div className="analytics-group-heading">
+          <h2 id="year-charts-title">Tu progreso durante {month.slice(0, 4)}</h2>
+          <p>Revisa el ahorro mes a mes y el escenario proyectado al cierre del año.</p>
+        </div>
+        <div className="analytics-grid">
+          <article className="analytics-chart">
+            <h3>Ahorro mensual · {month.slice(0, 4)}</h3>
+            <p>
+              Compara el ahorro neto (aportaciones menos retiros) con el plan mensual. El saldo
+              inicial no cuenta como ahorro nuevo.
+            </p>
+            <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
+              <BarChart data={data.annual} accessibilityLayer>
+                <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={axisMoney} width={75} />
+                <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
+                <Legend />
+                <Bar
+                  {...animation}
+                  dataKey="plannedSaving"
+                  name="Planeado"
+                  fill={chartColors.planned}
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  {...animation}
+                  dataKey="realSaving"
+                  name="Ahorro neto"
+                  fill={chartColors.actual}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ViewportChart>
+            <DataTable
+              caption="Ahorro mensual"
+              headers={['Mes', 'Planeado', 'Aportaciones', 'Retiros', 'Ahorro neto']}
+              rows={data.annual.map((row) => [
+                row.month,
+                formatCurrency(row.plannedSaving),
+                ...['contributions', 'withdrawals', 'realSaving'].map((key) =>
+                  row[key] === null ? 'Fuera del corte' : formatCurrency(row[key]),
+                ),
+              ])}
+            />
+          </article>
+          <article className="analytics-chart">
+            <h3>Tu ahorro hacia diciembre · {month.slice(0, 4)}</h3>
+            <p>
+              La línea continua muestra el saldo de ahorro, incluido el saldo inicial y descontando
+              retiros. La línea discontinua completa el escenario del plan.
+            </p>
+            <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
+              <LineChart data={data.annual} accessibilityLayer>
+                <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={axisMoney} width={75} />
+                <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
+                <Legend />
+                <Line
+                  {...animation}
+                  type="linear"
+                  dataKey="cumulative"
+                  name="Saldo de ahorro"
+                  stroke={chartColors.actual}
+                  strokeWidth={3}
+                  connectNulls={false}
+                />
+                <Line
+                  {...animation}
+                  type="linear"
+                  dataKey="projected"
+                  name="Escenario del plan"
+                  stroke={chartColors.projection}
+                  strokeWidth={3}
+                  strokeDasharray="6 4"
+                  connectNulls={false}
+                />
+              </LineChart>
+            </ViewportChart>
+            {data.projection === null && (
+              <p>No hay base de ahorro para proyectar en el año seleccionado.</p>
+            )}
+            <DataTable
+              caption="Proyección de ahorro"
+              headers={['Mes', 'Saldo de ahorro', 'Escenario del plan']}
+              rows={data.annual.map((row) => [
+                row.month,
+                row.cumulative === null ? 'Fuera del corte' : formatCurrency(row.cumulative),
+                row.projected === null ? '—' : formatCurrency(row.projected),
+              ])}
+            />
+          </article>
+          <article className="analytics-chart analytics-wide">
+            <h3>Planeado y real · {month.slice(0, 4)}</h3>
+            <p>Ingresos por mes de presupuesto asignado; gastos y deudas por fecha real.</p>
+            <label>
+              Comparar{' '}
+              <select value={comparison} onChange={(e) => setComparison(e.target.value)}>
+                <option value="expense">Gastos</option>
+                <option value="income">Ingresos</option>
+                <option value="debt">Pagos de deuda</option>
+              </select>
+            </label>
+            <ViewportChart initialDimension={{ width: 640, height: 300 }} width="100%" height={300}>
+              <BarChart data={data.annual} accessibilityLayer>
+                <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={axisMoney} width={75} />
+                <Tooltip formatter={moneyTooltip} contentStyle={chartTooltipStyle} />
+                <Legend />
+                <Bar
+                  {...animation}
+                  dataKey={plannedKey}
+                  name={`${seriesLabel} planeados`}
+                  fill={chartColors.planned}
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  {...animation}
+                  dataKey={actualKey}
+                  name={`${seriesLabel} reales`}
+                  fill={chartColors.actual}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ViewportChart>
+            <DataTable
+              caption={seriesLabel}
+              headers={['Mes', 'Planeado', 'Real']}
+              rows={data.annual.map((row) => [
+                row.month,
+                formatCurrency(row[plannedKey]),
+                row[actualKey] === null ? 'Fuera del corte' : formatCurrency(row[actualKey]),
+              ])}
+            />
+          </article>
+        </div>
+      </section>
+
       {!hasData && (
         <p className="analytics-empty">
           No hay movimientos reales en el mes seleccionado. Registra o confirma movimientos para
