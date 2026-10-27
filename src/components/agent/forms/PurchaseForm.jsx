@@ -5,7 +5,7 @@ import MoneyInput from '../../common/MoneyInput';
 /**
  * Agente: pregunta rápida de compra.
  * El usuario escribe qué quiere comprar y cuánto cuesta; el campo de texto es para que
- * cuente su situación. Plaris solo usa `name` y `priceCents`.
+ * cuente su situación. Plaris usa `name`, `priceCents` y `note` para el análisis.
  */
 export default function PurchaseForm({ busy, onSubmit }) {
   const [name, setName] = useState('');

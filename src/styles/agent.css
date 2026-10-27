@@ -320,6 +320,112 @@
   white-space: pre-line;
 }
 
+.advisor-purchase--positive {
+  background: #edf7ef;
+  border-color: #9ecfad;
+}
+
+.advisor-purchase--warning {
+  background: #faf6ea;
+  border-color: #e2cfa0;
+}
+
+.advisor-purchase--negative {
+  background: #fcf2f0;
+  border-color: #e4b8b2;
+}
+
+.advisor-purchase--neutral {
+  background: #edf3ef;
+  border-color: #c7dcd0;
+}
+
+.advisor-verdict {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #105f56;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.advisor-purchase--warning .advisor-verdict {
+  background: #8a641c;
+}
+
+.advisor-purchase--negative .advisor-verdict {
+  background: #9c3f34;
+}
+
+.advisor-purchase--neutral .advisor-verdict {
+  background: #566b63;
+}
+
+.advisor-purchase-line {
+  color: #40594f;
+}
+
+.advisor-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+.advisor-facts div {
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #d2e2db;
+  border-radius: 6px;
+}
+
+.advisor-facts dt {
+  color: #568b81;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.advisor-facts dd {
+  margin: 4px 0 0;
+  color: #173d33;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.advisor-facts dd.is-negative {
+  color: #9c3f34;
+}
+
+.advisor-source {
+  color: #627e72;
+  font-size: 0.78rem;
+}
+
+.advisor-warning {
+  padding: 12px 14px;
+  color: #6d4a12;
+  background: #fff7e6;
+  border-left: 4px solid #c58b2a;
+  border-radius: 4px;
+}
+
+.advisor-answer ul {
+  margin: 8px 0 16px;
+  padding-left: 20px;
+}
+
+.advisor-answer li {
+  margin: 5px 0;
+}
+
+.advisor-answer h4 {
+  margin: 18px 0 6px;
+}
+
 @media (max-width: 700px) {
   .agent-metrics-full {
     flex-direction: column;
@@ -502,7 +608,6 @@
   border-color: #105f56;
 }
 
-
 /* ============================================================
    ATAJOS Y FORMULARIOS DEL AGENTE
    ============================================================ */
@@ -615,7 +720,9 @@
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .agent-segmented button:hover {
@@ -736,7 +843,10 @@
   border-radius: 14px;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.1s;
 }
 
 .agent-report-option svg {
@@ -823,7 +933,6 @@
     flex-wrap: nowrap;
   }
 }
-
 
 /* ============================================================
    CENTRADO VERTICAL DEL FORMULARIO (sin scroll inicial)

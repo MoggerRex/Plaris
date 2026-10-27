@@ -3,6 +3,8 @@ import { useState } from 'react';
 import BudgetAdviceWorkspace from './BudgetAdviceWorkspace';
 import { useBudget } from '../../context/useBudget';
 import { useAdvice } from '../../hooks/useAdvice';
+import { usePurchaseAdvice } from '../../hooks/usePurchaseAdvice';
+import { buildPurchaseAnalysis } from '../../services/purchaseAnalysis';
 import { toPlannerData } from '../../services/financeAdapter';
 import { primaryBudgetGoal } from '../../services/budgetConnections';
 import { createId } from '../../services/budgetService';
@@ -27,18 +29,28 @@ export default function AgentWorkspace({
 }) {
   const state = useBudget();
   const { result, error, loading, generate } = useAdvice();
+  const {
+    result: purchaseResult,
+    error: purchaseError,
+    loading: purchaseLoading,
+    generate: generatePurchase,
+  } = usePurchaseAdvice();
   const [notice, setNotice] = useState('');
   const goals = providedGoals || budgetToGoals(budget, profile, month);
   const availableTemplates = templates.length ? templates : state.savedTemplates || [];
-  const isBusy = busy || loading;
+  const isBusy = busy || loading || purchaseLoading;
   const [mode, setMode] = useState('agente');
   const [lastRequest, setLastRequest] = useState(null);
   const active = agentShortcuts.find((item) => item.id === mode);
+  const isPurchase = lastRequest?.kind === 'purchase';
+  const shownResult = isPurchase ? purchaseResult : result;
+  const shownError = isPurchase ? purchaseError : error;
+  const shownLoading = isPurchase ? purchaseLoading : loading;
 
   function dispatch(kind, payload) {
-    setLastRequest({ kind, payload });
     setNotice('');
     if (kind === 'schedule') {
+      setLastRequest({ kind, payload });
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       state.addTransaction({
@@ -48,7 +60,18 @@ export default function AgentWorkspace({
       });
       onRegisterEntry?.(payload);
       setNotice('Movimiento registrado en el mes seleccionado.');
+    } else if (kind === 'purchase') {
+      // La compra se evalúa con los movimientos reales del mes, no con el presupuesto planeado.
+      const analysis = buildPurchaseAnalysis({
+        month,
+        transactions: state.transactions,
+        debts,
+        purchase: payload,
+      });
+      setLastRequest({ kind, payload, analysis });
+      generatePurchase(analysis);
     } else {
+      setLastRequest({ kind, payload });
       let analysisBudget = budget;
       const data = toPlannerData(
         budget,
@@ -57,12 +80,6 @@ export default function AgentWorkspace({
         month,
         JSON.stringify({ kind, ...payload }),
       );
-      if (kind === 'purchase')
-        data.goal = {
-          name: payload.name,
-          cost: payload.priceCents / 100,
-          days: Number(profile.days || 90),
-        };
       if (kind === 'goal') {
         const goal =
           payload.mode === 'new' ? payload.goal : goals.find((item) => item.id === payload.goalId);
@@ -153,13 +170,13 @@ export default function AgentWorkspace({
       </div>
 
       {notice && <p role="status">{notice}</p>}
-      {error && (
+      {shownError && (
         <p role="alert" className="validation-box warning">
-          {error}
+          {shownError}
         </p>
       )}
-      {loading && <p role="status">Plaris está preparando tu asesoría con Ollama…</p>}
-      <AdviceResult result={result} />
+      {shownLoading && <p role="status">Plaris está preparando tu asesoría con Ollama…</p>}
+      <AdviceResult result={shownResult} />
       {import.meta.env.DEV && lastRequest && (
         <details className="agent-dev-payload">
           <summary>Datos preparados (solo en desarrollo)</summary>
