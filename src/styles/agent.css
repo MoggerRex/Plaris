@@ -501,3 +501,375 @@
   background: #d1e8df;
   border-color: #105f56;
 }
+
+
+/* ============================================================
+   ATAJOS Y FORMULARIOS DEL AGENTE
+   ============================================================ */
+.agent-form {
+  margin-top: 15px;
+}
+
+.agent-form .chat-input-container {
+  margin-top: 0;
+}
+
+/* Atajo activo */
+.pill-button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pill-button[aria-pressed='true'] {
+  background: #105f56;
+  border-color: #105f56;
+  color: #ffffff;
+}
+
+.pill-button[aria-pressed='true']:hover {
+  background: #197b6d;
+}
+
+/* ----- Barra tipo chat: selects y monto ----- */
+.chat-leading-icon {
+  flex-shrink: 0;
+  color: #568b81;
+}
+
+.chat-field-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: #0b453e;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.chat-field-select:disabled {
+  cursor: not-allowed;
+}
+
+.chat-currency {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #105f56;
+}
+
+.chat-money-input {
+  flex: 0 1 190px;
+  min-width: 90px;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0b453e;
+}
+
+.chat-money-input::placeholder {
+  font-weight: 400;
+  color: #568b81;
+}
+
+.chat-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 6px 0;
+  background: #86bcb0;
+}
+
+/* ----- Selector segmentado (Meta existente / nueva, Gasto / Ingreso) ----- */
+.agent-subtabs {
+  display: flex;
+  justify-content: center;
+}
+
+.agent-form > .agent-subtabs {
+  margin-bottom: 12px;
+}
+
+.agent-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: #e3f0e9;
+  border: 1px solid #c4d8d1;
+  border-radius: 999px;
+}
+
+.agent-segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: transparent;
+  color: #105f56;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.agent-segmented button:hover {
+  background: rgba(16, 95, 86, 0.1);
+}
+
+.agent-segmented button[aria-pressed='true'] {
+  background: #105f56;
+  color: #ffffff;
+}
+
+/* ----- Tarjeta de formulario (Metas y Reportes) ----- */
+.agent-form-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px;
+  background: #e9f5f1;
+  border: 1px solid #86bcb0;
+  border-radius: 22px;
+}
+
+.agent-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.agent-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.agent-field > span {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #0b453e;
+}
+
+.agent-field input,
+.agent-field select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #86bcb0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #0b453e;
+}
+
+.agent-field input:focus,
+.agent-field select:focus {
+  outline: 2px solid rgba(16, 95, 86, 0.3);
+  outline-offset: 0;
+  border-color: #105f56;
+}
+
+/* Meta existente: campos que se llenan solos */
+.agent-field input[readonly] {
+  background: #e3f0e9;
+  border-style: dashed;
+  cursor: default;
+}
+
+.agent-field--wide {
+  grid-column: 1 / -1;
+}
+
+.agent-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agent-form-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: center;
+  color: #627e72;
+}
+
+.agent-form-card .agent-form-hint,
+.agent-form-actions .agent-form-hint {
+  margin: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.agent-form-hint a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* ----- Reportes: tres botones ----- */
+.agent-report-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.agent-report-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  color: #105f56;
+  border: 1px solid #86bcb0;
+  border-radius: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+
+.agent-report-option svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.agent-report-option strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.agent-report-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: #627e72;
+}
+
+.agent-report-option:hover:not(:disabled) {
+  background: #f3fbf8;
+  border-color: #105f56;
+  transform: translateY(-1px);
+}
+
+/* ----- Vista de desarrollo del payload ----- */
+.agent-dev-payload {
+  margin-top: 22px;
+  font-size: 0.8rem;
+  color: #627e72;
+}
+
+.agent-dev-payload pre {
+  margin: 8px 0 0;
+  padding: 12px;
+  overflow: auto;
+  background: #0b453e;
+  color: #d8f3eb;
+  border-radius: 8px;
+}
+
+@media (max-width: 700px) {
+  .chat-input-container {
+    flex-wrap: wrap;
+    border-radius: 22px;
+  }
+
+  .chat-divider {
+    display: none;
+  }
+}
+
+/* ----- Agente: pregunta rápida de compra ----- */
+.agent-purchase-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+/* Campo de situación: una fila al inicio, crece al escribir y lleva el botón de enviar dentro */
+.agent-note-bar {
+  align-items: flex-end; /* el botón se queda abajo a la derecha mientras crece */
+}
+
+/* Selector reforzado (.agent-field ...) para ganarle a cualquier regla genérica de textarea */
+.agent-field .agent-note-bar textarea {
+  min-height: 36px; /* 1 fila */
+  max-height: 220px;
+  padding: 7px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #86bcb0 transparent;
+}
+
+@media (max-width: 700px) {
+  .agent-purchase-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-note-bar {
+    flex-wrap: nowrap;
+  }
+}
+
+
+/* ============================================================
+   CENTRADO VERTICAL DEL FORMULARIO (sin scroll inicial)
+   ============================================================ */
+.agent-workspace {
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(12px, 2vh, 28px); /* antes 65px arriba y abajo: empujaba todo hacia abajo */
+}
+
+.agent-workspace > * {
+  flex-shrink: 0;
+}
+
+/* Márgenes automáticos arriba (título) y abajo (formulario + atajos):
+   centran el bloque en la altura disponible. Si no cabe, se alinea arriba y
+   el chat hace scroll por dentro. */
+.agent-workspace > h2 {
+  margin: auto 0 clamp(10px, 2.2vh, 24px);
+  font-size: clamp(2.2rem, min(4.7vw, 10vh), 5.5rem); /* el título también se adapta a la altura */
+}
+
+.agent-workspace > .agent-composer {
+  margin-bottom: auto;
+}
+
+/* Tarjetas un poco más compactas */
+.agent-form-card {
+  gap: 14px;
+  padding: 18px 22px;
+}
+
+/* ============================================================
+   METAS: todos los campos en una sola fila
+   ============================================================ */
+.agent-goal-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end; /* si una etiqueta ocupa 2 líneas, los campos siguen alineados */
+}
+
+.agent-goal-grid .agent-field {
+  align-content: end;
+}
+
+@media (max-width: 1300px) {
+  .agent-goal-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+}

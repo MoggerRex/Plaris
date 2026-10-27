@@ -1,98 +1,126 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowUpRight, Pencil, FileClock, FolderUser, CornerDownLeft } from 'lucide-react';
+import { agentShortcuts } from '../../config/agentForms';
 import { useAdvice } from '../../hooks/useAdvice';
 import { toPlannerData } from '../../services/financeAdapter';
-import { primaryBudgetGoal } from '../../services/budgetConnections';
 import AdviceResult from './AdviceResult';
+import PurchaseForm from './forms/PurchaseForm';
+import GoalForm from './forms/GoalForm';
+import ReportsForm from './forms/ReportsForm';
+import ScheduleForm from './forms/ScheduleForm';
 
-export default function AgentWorkspace({ month, budget, profile, debts }) {
-  const activeGoal = primaryBudgetGoal(budget, profile, month);
-  const goals = (budget.goals || []).filter((goal) => goal.name?.trim());
-  const goalNames = goals.length ? goals.map((goal) => goal.name).join(' · ') : activeGoal.name;
-  const [context, setContext] = useState('');
-  const [plan, setPlan] = useState('estandar');
+export default function AgentWorkspace({
+  month,
+  budget,
+  debts,
+  profile,
+  templates = [],
+  goals = [],
+  busy = false,
+  onCreateGoal,
+  onRegisterEntry,
+  onRequest,
+}) {
+  const [mode, setMode] = useState('agente');
+  const [lastRequest, setLastRequest] = useState(null);
+  const active = agentShortcuts.find((item) => item.id === mode);
   const { result, error, loading, generate } = useAdvice();
+  busy = busy || loading;
 
-  function submit(event) {
-    event.preventDefault();
-    generate(toPlannerData(budget, profile, debts, month, context), plan);
+  function dispatch(kind, payload) {
+    setLastRequest({ kind, payload });
+    if (kind === 'goal' && payload.mode === 'new') onCreateGoal?.(payload.goal);
+    if (kind === 'schedule') onRegisterEntry?.(payload);
+    onRequest?.(kind, payload);
+    if (kind === 'schedule') return;
+    const template =
+      kind === 'report' && payload.source.kind === 'template'
+        ? templates.find((item) => item.id === payload.source.id)
+        : null;
+    const data = toPlannerData(
+      template?.budget || budget,
+      profile,
+      debts,
+      month,
+      `Solicitud: ${kind}. Datos del usuario: ${JSON.stringify(payload)}. Los campos cost, currentSaving, protectedReserve y priceCents están en centavos MXN.`,
+    );
+    const goal =
+      kind === 'purchase'
+        ? { name: payload.name, cost: payload.priceCents, deadlineDays: data.goal.days }
+        : kind === 'goal'
+          ? payload.goal || goals.find((item) => item.id === payload.goalId)
+          : payload.source.kind === 'goal'
+            ? goals.find((item) => item.id === payload.source.id)
+            : null;
+    if (goal) {
+      data.goal = { name: goal.name, cost: goal.cost / 100, days: Number(goal.deadlineDays) };
+      if (kind === 'goal') {
+        data.savings = goal.currentSaving / 100;
+        data.reserve = goal.protectedReserve / 100;
+      }
+    }
+    generate(data, 'estandar');
   }
 
   return (
     <section className="agent-workspace">
       <h2>
-        ¿Por dónde
+        {active.titleLine1}
         <br />
-        empezamos{profile.displayName ? ', ' + profile.displayName : ''}?
+        {active.titleLine2}
       </h2>
-      <p className="agent-subtitle">
-        Dale un propósito a tu dinero. Plaris te ayuda a encontrar el camino.
-      </p>
-      <div className="goal-preview">
-        <strong>{goalNames || 'Aún no has definido una meta'}</strong>
-        <Link to={(goals.length ? '/presupuesto/savings?mes=' : '/perfil/resumen?mes=') + month}>
-          Ver mis metas y datos <ArrowUpRight size={16} />
-        </Link>
+
+      {/* Formulario según el atajo activo */}
+      <div className="agent-composer">
+        {mode === 'agente' && (
+          <PurchaseForm busy={busy} onSubmit={(payload) => dispatch('purchase', payload)} />
+        )}
+        {mode === 'metas' && (
+          <GoalForm goals={goals} busy={busy} onSubmit={(payload) => dispatch('goal', payload)} />
+        )}
+        {mode === 'reportes' && (
+          <ReportsForm
+            templates={templates}
+            goals={goals}
+            busy={busy}
+            onSubmit={(payload) => dispatch('report', payload)}
+          />
+        )}
+        {mode === 'agendar' && (
+          <ScheduleForm busy={busy} onSubmit={(payload) => dispatch('schedule', payload)} />
+        )}
+
+        <p className="agent-form-hint">{active.hint}</p>
+
+        {/* Atajos */}
+        <div className="agent-quick-actions" role="group" aria-label="Atajos del agente">
+          {agentShortcuts.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className="pill-button"
+              aria-pressed={mode === id}
+              onClick={() => setMode(id)}
+            >
+              {Icon ? <Icon size={16} /> : <span>Φ</span>} {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <form onSubmit={submit} className="agent-question">
-        {/* Barra de chat tipo Gemini */}
-        <div className="chat-input-container">
-          <textarea
-            id="agent-context"
-            value={context}
-            onChange={(event) => setContext(event.target.value)}
-            placeholder="Cuéntale a Plaris qué tienes en mente…"
-            disabled={loading}
-            rows={1}
-          />
-          <div className="chat-controls-inline">
-            <select
-              value={plan}
-              onChange={(event) => setPlan(event.target.value)}
-              disabled={loading}
-              aria-label="Tipo de análisis"
-              className="chat-plan-select"
-            >
-              <option value="estandar">Estándar</option>
-              <option value="avanzado">Avanzado</option>
-            </select>
-            <button
-              type="submit"
-              className="chat-send-button"
-              disabled={loading}
-              aria-label="Crear mi plan"
-            >
-              <CornerDownLeft size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Botones inferiores de acciones rápidas con iconos de Lucide */}
-        <div className="agent-quick-actions">
-          <Link to={'/dashboard?mes=' + month} className="pill-button">
-            <span>Φ</span> Agente
-          </Link>
-          <Link to={'/perfil/resumen?mes=' + month} className="pill-button">
-            <Pencil size={16} /> Agendar
-          </Link>
-          <Link to={'/analisis?mes=' + month} className="pill-button">
-            <FileClock size={16} /> Historial
-          </Link>
-          <Link to={'/perfil?mes=' + month} className="pill-button">
-            <FolderUser size={16} /> Mis datos
-          </Link>
-        </div>
-      </form>
-
+      {loading && <p role="status">Plaris está analizando tu solicitud…</p>}
       {error && (
         <p role="alert" className="validation-box warning">
           {error}
         </p>
       )}
-      {loading && <p role="status">Plaris está preparando tu asesoría con Ollama…</p>}
-      <AdviceResult result={result} />
+      {result && <AdviceResult result={result} />}
+      {lastRequest?.kind === 'schedule' && <p role="status">Movimiento registrado.</p>}
+      {import.meta.env.DEV && lastRequest && (
+        <details className="agent-dev-payload">
+          <summary>Datos preparados (solo en desarrollo)</summary>
+          <pre>{JSON.stringify(lastRequest, null, 2)}</pre>
+        </details>
+      )}
     </section>
   );
 }
