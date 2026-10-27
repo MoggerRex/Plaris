@@ -46,7 +46,9 @@ export function BudgetProvider({ children }) {
     const result = validateZeroBasedBudget(budget, data.deudas_activas);
     if (!result.valid) throw new Error(result.errors.join(' '));
     if (result.pending > 0)
-      throw new Error('Asigna todo el ingreso entre gastos, ahorros, metas, fondo de emergencia y pagos de deuda.');
+      throw new Error(
+        'Asigna todo el ingreso entre gastos, ahorros, metas, fondo de emergencia y pagos de deuda.',
+      );
     const template = cloneBudget(budget);
     const month = currentMonthKey();
     setData((previous) => ({
@@ -126,6 +128,27 @@ export function BudgetProvider({ children }) {
     }));
   }, []);
 
+  // Elimina un análisis del historial. Acepta el registro completo o su id,
+  // y tolera registros antiguos sin id comparando fecha y mes.
+  const deleteAnalysis = useCallback((recordOrId) => {
+    const id = typeof recordOrId === 'string' ? recordOrId : recordOrId?.id;
+    const fallback =
+      typeof recordOrId === 'object' && recordOrId
+        ? { createdAt: recordOrId.createdAt, month: recordOrId.month }
+        : null;
+
+    setData((previous) => ({
+      ...previous,
+      analysisHistory: (previous.analysisHistory || []).filter((item) => {
+        if (id) return item.id !== id;
+        if (fallback?.createdAt) {
+          return !(item.createdAt === fallback.createdAt && item.month === fallback.month);
+        }
+        return true;
+      }),
+    }));
+  }, []);
+
   function saveAsTemplate(month) {
     const budget = data.monthlyBudgets[month];
     if (budget) setData((previous) => ({ ...previous, template: cloneBudget(budget) }));
@@ -165,6 +188,7 @@ export function BudgetProvider({ children }) {
         applyNamedTemplate,
         deleteNamedTemplate,
         saveAnalysis,
+        deleteAnalysis,
         updateDraft,
         completeOnboarding,
         ensureMonth,

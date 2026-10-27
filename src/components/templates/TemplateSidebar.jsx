@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMonthBudget } from '../../hooks/useMonthBudget';
 import { SquarePen, TextSearch, PanelLeftClose } from 'lucide-react';
 import AnalysisHistory from '../analysis/AnalysisHistory';
 
 export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
-  const { savedTemplates, profile, month, analysisHistory } = useMonthBudget();
+  const { savedTemplates, profile, month, analysisHistory, deleteAnalysis } = useMonthBudget();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   function openSavedAnalysis(record) {
     if (!record?.id) return;
@@ -15,6 +16,18 @@ export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
     params.set('analisis', record.id);
     navigate(`/dashboard?${params.toString()}`);
     onNavigate?.();
+  }
+
+  function deleteSavedAnalysis(record) {
+    deleteAnalysis(record);
+
+    // Si el análisis eliminado es el que se está viendo, vuelve al agente.
+    if (record?.id && searchParams.get('analisis') === record.id) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('analisis');
+      params.set('mes', record.month || month);
+      navigate(`/dashboard?${params.toString()}`, { replace: true });
+    }
   }
 
   const animationConfig = {
@@ -68,7 +81,11 @@ export default function TemplateSidebar({ onNavigate, onToggle, isOpen }) {
         <span className="eyebrow" id="sidebar-analisis">
           Análisis guardados
         </span>
-        <AnalysisHistory records={analysisHistory} onSelect={openSavedAnalysis} />
+        <AnalysisHistory
+          records={analysisHistory}
+          onSelect={openSavedAnalysis}
+          onDelete={deleteSavedAnalysis}
+        />
       </section>
 
       {/* SECCIÓN 2: Plantillas guardadas */}

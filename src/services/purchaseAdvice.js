@@ -151,6 +151,7 @@ function fallbackAdvice(analysis) {
   const fondoPendiente = formatCurrency(analysis.pendingFundSavingCents);
   const ingresoPendiente = formatCurrency(analysis.pendingIncomeCents);
   const disponible = formatCurrency(analysis.availableCents);
+  const disponibleSinFondo = formatCurrency(analysis.availableWithNonFundSavingsCents);
   const disponibleAhorro = formatCurrency(analysis.availableWithAllSavingsCents);
   const faltante = formatCurrency(calculo.faltanteCents);
   const montoAjuste = formatCurrency(calculo.montoAjusteAhorroCents);
@@ -360,4 +361,4 @@ El JSON debe contener: titulo breve, explicacion de 2 o 3 oraciones con el vered
   }
 
   return normalizePurchaseAdvice(raw, analysis);
-}
+} 
